@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Мій словник</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --radius-card: 20px;
+    --radius-btn: 14px;
+  }
+
+  :root[data-theme="light"] {
+    --page-bg: var(--tg-theme-bg-color, #f4f2ea);
+    --card-bg: #fffdf8;
+    --card-back-bg: #fbf8f0;
+    --ink: var(--tg-theme-text-color, #1d1c18);
+    --muted: var(--tg-theme-hint-color, #8a8578);
+    --rule: #ddd7c6;
+    --accent: #2f6f5e;
+    --accent-soft: #e4efec;
+    --again: #b4432f;
+    --again-soft: #f6e3df;
+    --hard: #ad7d1f;
+    --hard-soft: #f3e9d4;
+    --good: #2f6f5e;
+    --good-soft: #e4efec;
+    --easy: #35618f;
+    --easy-soft: #e2ebf3;
+    --shadow: 0 18px 40px -22px rgba(30, 25, 15, 0.45);
+  }
+
+  :root[data-theme="dark"] {
+    --page-bg: var(--tg-theme-bg-color, #16181a);
+    --card-bg: #232522;
+    --card-back-bg: #1e201d;
+    --ink: var(--tg-theme-text-color, #eeece4);
+    --muted: var(--tg-theme-hint-color, #928f84);
+    --rule: #3a3c37;
+    --accent: #5fb69d;
+    --accent-soft: #24322d;
+    --again: #e2796a;
+    --again-soft: #34211f;
+    --hard: #e2b466;
+    --hard-soft: #332a1a;
+    --good: #5fb69d;
+    --good-soft: #1f3129;
+    --easy: #7ba7d6;
+    --easy-soft: #1e2b38;
+    --shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    padding: 18px 20px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .topbar-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .brand {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.01em;
+  }
+
+  .brand span {
+    color: var(--accent);
+  }
+
+  .progress-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-track {
+    height: 5px;
+    border-radius: 999px;
+    background: var(--rule);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    width: 0%;
+    transition: width 0.35s ease;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px 28px;
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  /* ---------- card ---------- */
+
+  .card-wrap {
+    width: 100%;
+    perspective: 1400px;
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    min-height: 340px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(.4, .2, .2, 1);
+    cursor: pointer;
+  }
+
+  .card.flipped {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 28px 26px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-front {
+    background: var(--card-bg);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px);
+    background-size: 100% 34px;
+    background-position: 0 128px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px solid var(--rule);
+  }
+
+  .card-front .eyebrow {
+    position: absolute;
+    top: 20px;
+    left: 26px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .word {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.15;
+    word-break: break-word;
+  }
+
+  .tap-hint {
+    position: absolute;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .card-back {
+    background: var(--card-back-bg);
+    border: 1px solid var(--rule);
+    transform: rotateY(180deg);
+    overflow-y: auto;
+    align-items: stretch;
+    text-align: left;
+    gap: 14px;
+  }
+
+  .card-back .word-small {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .play-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 15px;
+  }
+
+  .play-btn:active { transform: scale(0.92); }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .definition {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .examples {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--ink);
+    opacity: 0.9;
+  }
+
+  .examples li {
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.4;
+  }
+
+  .examples li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+  }
+
+  .card-img {
+    width: 100%;
+    border-radius: 12px;
+    max-height: 140px;
+    object-fit: cover;
+  }
+
+  /* ---------- rating buttons ---------- */
+
+  .rate-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .rate-row.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .rate-btn {
+    flex: 1;
+    border: none;
+    border-radius: var(--radius-btn);
+    padding: 12px 4px 10px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .rate-btn:active { transform: scale(0.95); }
+
+  .rate-btn .n { font-size: 10px; font-weight: 500; opacity: 0.75; }
+
+  .rate-again { background: var(--again-soft); color: var(--again); }
+  .rate-hard  { background: var(--hard-soft);  color: var(--hard); }
+  .rate-good  { background: var(--good-soft);  color: var(--good); }
+  .rate-easy  { background: var(--easy-soft);  color: var(--easy); }
+
+  /* ---------- states ---------- */
+
+  .state-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 40px 24px;
+  }
+
+  .state-icon { font-size: 40px; }
+
+  .state-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 20px;
+  }
+
+  .state-text {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  .spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid var(--rule);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .rate-row, .progress-fill { transition: none !important; }
+    .spinner { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="brand">📖 Мій <span>словник</span></div>
+    <div class="progress-label" id="progressLabel"></div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<main>
+  <div class="stage">
+
+    <!-- loading -->
+    <div class="state-screen" id="stateLoading">
+      <div class="spinner"></div>
+      <div class="state-text">Завантажую картки…</div>
+    </div>
+
+    <!-- error / not opened via Telegram -->
+    <div class="state-screen hidden" id="stateError">
+      <div class="state-icon">⚠️</div>
+      <div class="state-title">Не вдалося завантажити</div>
+      <div class="state-text" id="stateErrorText">
+        Відкрий цей застосунок через кнопку в Telegram-боті.
+      </div>
+    </div>
+
+    <!-- empty -->
+    <div class="state-screen hidden" id="stateEmpty">
+      <div class="state-icon">🎉</div>
+      <div class="state-title">На сьогодні все</div>
+      <div class="state-text">
+        Немає карток, які треба повторити прямо зараз. Повертайся пізніше —
+        або додай нові картки через бота.
+      </div>
+    </div>
+
+    <!-- done with session -->
+    <div class="state-screen hidden" id="stateDone">
+      <div class="state-icon">✅</div>
+      <div class="state-title">Сесію завершено</div>
+      <div class="state-text" id="stateDoneText"></div>
+    </div>
+
+    <!-- study -->
+    <div id="stateStudy" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:22px;">
+      <div class="card-wrap">
+        <div class="card" id="card">
+          <div class="card-face card-front">
+            <div class="eyebrow">Слово</div>
+            <div class="word" id="wordFront"></div>
+            <div class="tap-hint">торкнись, щоб перевернути</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="word-small">
+              <span id="wordBack"></span>
+              <button class="play-btn hidden" id="playBtn" aria-label="Відтворити вимову">▶</button>
+            </div>
+            <img class="card-img hidden" id="cardImg" alt="">
+            <div>
+              <div class="section-label">Визначення</div>
+              <div class="definition" id="definition"></div>
+            </div>
+            <div id="examplesWrap">
+              <div class="section-label">Приклади</div>
+              <ul class="examples" id="examples"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rate-row" id="rateRow">
+        <button class="rate-btn rate-again" data-rating="again">Again<span class="n">&lt;1 хв</span></button>
+        <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
+        <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
+        <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<audio id="audioPlayer" class="hidden"></audio>
+
+<script>
+// ==================== НАЛАШТУВАННЯ ====================
+const EDGE_FUNCTION_URL = "https://cfapayxqkldioxukfpvf.supabase.co/functions/v1/study-api";
+// ========================================================
+
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+function applyTheme() {
+  const scheme = (tg && tg.colorScheme) ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', scheme);
+}
+applyTheme();
+if (tg) tg.onEvent('themeChanged', applyTheme);
+
+const el = (id) => document.getElementById(id);
+
+const screens = {
+  loading: el('stateLoading'),
+  error: el('stateError'),
+  empty: el('stateEmpty'),
+  done: el('stateDone'),
+  study: el('stateStudy'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach((s) => s.classList.add('hidden'));
+  screens[name].classList.remove('hidden');
+}
+
+let queue = [];
+let totalCount = 0;
+let currentCard = null;
+let flipped = false;
+let reviewedCount = 0;
+
+async function callApi(action, payload) {
+  const initData = tg ? tg.initData : "";
+  const resp = await fetch(EDGE_FUNCTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, initData, ...payload }),
+  });
+  const data = await resp.json();
+  if (!resp.ok || data.error) {
+    throw new Error(data.error || "unknown_error");
+  }
+  return data;
+}
+
+async function loadDueCards() {
+  showScreen('loading');
+  try {
+    const data = await callApi("get_due_cards", {});
+    queue = data.cards || [];
+    totalCount = queue.length;
+    reviewedCount = 0;
+    if (queue.length === 0) {
+      showScreen('empty');
+      updateProgress();
+      return;
+    }
+    showScreen('study');
+    nextCard();
+  } catch (e) {
+    el('stateErrorText').textContent =
+      e.message === "invalid_init_data"
+        ? "Відкрий цей застосунок через кнопку в Telegram-боті (не напряму в браузері)."
+        : "Щось пішло не так. Спробуй ще раз трохи пізніше.";
+    showScreen('error');
+  }
+}
+
+function updateProgress() {
+  const label = el('progressLabel');
+  const fill = el('progressFill');
+  if (totalCount === 0) {
+    label.textContent = "";
+    fill.style.width = "0%";
+    return;
+  }
+  label.textContent = `${reviewedCount} / ${totalCount}`;
+  fill.style.width = `${Math.round((reviewedCount / totalCount) * 100)}%`;
+}
+
+function nextCard() {
+  flipped = false;
+  el('card').classList.remove('flipped');
+  el('rateRow').classList.remove('visible');
+
+  if (queue.length === 0) {
+    el('stateDoneText').textContent =
+      reviewedCount > 0
+        ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
+        : "Повертайся пізніше.";
+    showScreen('done');
+    updateProgress();
+    return;
+  }
+
+  currentCard = queue.shift();
+  renderCard(currentCard);
+  updateProgress();
+}
+
+function renderCard(card) {
+  el('wordFront').textContent = card.word;
+  el('wordBack').textContent = card.word;
+  el('definition').textContent = card.definition;
+
+  const examplesEl = el('examples');
+  examplesEl.innerHTML = "";
+  const examples = Array.isArray(card.examples) ? card.examples : [];
+  el('examplesWrap').style.display = examples.length ? "" : "none";
+  examples.forEach((ex) => {
+    const li = document.createElement('li');
+    li.textContent = ex;
+    examplesEl.appendChild(li);
+  });
+
+  const img = el('cardImg');
+  if (card.image_url) {
+    img.src = card.image_url;
+    img.classList.remove('hidden');
+  } else {
+    img.classList.add('hidden');
+  }
+
+  const playBtn = el('playBtn');
+  if (card.audio_url) {
+    playBtn.classList.remove('hidden');
+  } else {
+    playBtn.classList.add('hidden');
+  }
+
+  // Приблизні підписи інтервалів (орієнтовно, для наочності)
+  const ease = card.ease_factor || 2.5;
+  const interval = card.interval_days || 0;
+  const fmt = (days) => (days < 1 ? "сьогодні" : days < 30 ? `${Math.round(days)}д` : `${Math.round(days / 30)}міс`);
+  el('nHard').textContent = fmt(Math.max(1, interval * 1.2));
+  el('nGood').textContent = fmt(interval === 0 ? 1 : interval * ease);
+  el('nEasy').textContent = fmt((interval === 0 ? 1 : interval * ease) * 1.3);
+}
+
+el('card').addEventListener('click', () => {
+  flipped = !flipped;
+  el('card').classList.toggle('flipped', flipped);
+  el('rateRow').classList.toggle('visible', flipped);
+});
+
+el('playBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!currentCard || !currentCard.audio_url) return;
+  const player = el('audioPlayer');
+  player.src = currentCard.audio_url;
+  player.play().catch(() => {});
+});
+
+document.querySelectorAll('.rate-btn').forEach((btn) => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!currentCard) return;
+    const rating = btn.dataset.rating;
+    document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = true));
+    try {
+      await callApi("submit_review", { card_id: currentCard.id, rating });
+    } catch (err) {
+      // Тихо ігноруємо - картка вже показана, спробуємо ще раз наступного разу
+    }
+    document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = false));
+    reviewedCount += 1;
+    nextCard();
+  });
+});
+
+loadDueCards();
+</script>
+</body>
+</html>
