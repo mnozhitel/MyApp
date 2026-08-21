@@ -445,7 +445,7 @@
       </div>
 
       <div class="rate-row" id="rateRow">
-        <button class="rate-btn rate-again" data-rating="again">Again<span class="n">&lt;1 хв</span></button>
+        <button class="rate-btn rate-again" data-rating="again">Again<span class="n" id="nAgain"></span></button>
         <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
         <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
         <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
@@ -461,6 +461,91 @@
 // ==================== НАЛАШТУВАННЯ ====================
 const EDGE_FUNCTION_URL = "https://cfapayxqkldioxukfpvf.supabase.co/functions/v1/study-api";
 // ========================================================
+
+// ---- FSRS-6 (ті самі формули й параметри, що й у Edge Function) ----
+// Використовується ЛИШЕ для показу орієнтовних підписів під кнопками
+// (напр. "3д") - фактичний розрахунок і запис результату завжди робить
+// Edge Function, це просто прев'ю для користувача.
+const FSRS_W = [
+  0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722,
+  0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425,
+  0.0912, 0.0658, 0.1542,
+];
+const FSRS_DESIRED_RETENTION = 0.9;
+const FSRS_DECAY = -FSRS_W[20];
+const FSRS_FACTOR = Math.pow(0.9, 1 / FSRS_DECAY) - 1;
+
+function fsrsClamp(x, lo, hi) { return Math.min(Math.max(x, lo), hi); }
+function fsrsInitStability(rating) { return FSRS_W[rating - 1]; }
+function fsrsInitDifficulty(rating) { return fsrsClamp(FSRS_W[4] - Math.exp(FSRS_W[5] * (rating - 1)) + 1, 1, 10); }
+function fsrsNextDifficulty(prevD, rating) {
+  const deltaD = -FSRS_W[6] * (rating - 3);
+  const damped = (10 - prevD) * deltaD / 9;
+  return fsrsClamp(FSRS_W[7] * fsrsInitDifficulty(4) + (1 - FSRS_W[7]) * (prevD + damped), 1, 10);
+}
+function fsrsRetrievability(elapsedDays, stability) {
+  if (stability <= 0) return 0;
+  return Math.pow(1 + (FSRS_FACTOR * elapsedDays) / stability, FSRS_DECAY);
+}
+function fsrsNextStabilitySuccess(D, S, R, rating) {
+  const hardPenalty = rating === 2 ? FSRS_W[15] : 1;
+  const easyBonus = rating === 4 ? FSRS_W[16] : 1;
+  const sInc = Math.exp(FSRS_W[8]) * (11 - D) * Math.pow(S, -FSRS_W[9]) *
+    (Math.exp(FSRS_W[10] * (1 - R)) - 1) * hardPenalty * easyBonus + 1;
+  return S * sInc;
+}
+function fsrsIntervalFromStability(S) {
+  const days = (S * (Math.pow(FSRS_DESIRED_RETENTION, 1 / FSRS_DECAY) - 1)) / FSRS_FACTOR;
+  return fsrsClamp(Math.round(days), 1, 36500);
+}
+
+const LEARNING_STEPS_MIN = [1, 10];
+const RELEARNING_STEPS_MIN = [10];
+
+/** Прев'ю одного варіанту оцінки - повторює ту саму логіку автомату
+    станів, що й Edge Function, лише для показу підпису на кнопці. */
+function fsrsPreview(card, ratingName) {
+  const rating = { again: 1, hard: 2, good: 3, easy: 4 }[ratingName];
+  const state = card.state || 'new';
+  const step = card.step || 0;
+  const stability = card.stability ?? null;
+  const difficulty = card.difficulty ?? null;
+
+  if (state === 'new' || state === 'learning') {
+    const steps = LEARNING_STEPS_MIN;
+    if (rating === 1) return { unit: 'min', value: steps[0] };
+    if (rating === 2) return { unit: 'min', value: steps[Math.min(step, steps.length - 1)] };
+    if (rating === 4) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(4)) };
+    // good
+    if (step + 1 >= steps.length) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(3)) };
+    return { unit: 'min', value: steps[step + 1] };
+  }
+
+  if (state === 'relearning') {
+    const steps = RELEARNING_STEPS_MIN;
+    if (rating === 1) return { unit: 'min', value: steps[0] };
+    if (rating === 2) return { unit: 'min', value: steps[Math.min(step, steps.length - 1)] };
+    if (step + 1 >= steps.length || rating === 4) return { unit: 'day', value: fsrsIntervalFromStability(stability) };
+    return { unit: 'min', value: steps[step + 1] };
+  }
+
+  // review
+  const elapsedDays = card.last_reviewed_at
+    ? Math.max(0, (Date.now() - new Date(card.last_reviewed_at).getTime()) / 86400000)
+    : 0;
+  if (rating === 1) return { unit: 'min', value: RELEARNING_STEPS_MIN[0] };
+  const R = fsrsRetrievability(elapsedDays, stability);
+  const D = fsrsNextDifficulty(difficulty, rating);
+  const S = fsrsNextStabilitySuccess(difficulty, stability, R, rating);
+  return { unit: 'day', value: fsrsIntervalFromStability(S) };
+}
+
+function fmtPreview(p) {
+  if (p.unit === 'min') return p.value < 60 ? `${p.value}хв` : `${Math.round(p.value / 60)}год`;
+  if (p.value < 30) return `${p.value}д`;
+  return `${Math.round(p.value / 30)}міс`;
+}
+// ----------------------------------------------------------------
 
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 if (tg) {
@@ -492,7 +577,6 @@ function showScreen(name) {
 }
 
 let queue = [];
-let totalCount = 0;
 let currentCard = null;
 let flipped = false;
 let reviewedCount = 0;
@@ -516,7 +600,6 @@ async function loadDueCards() {
   try {
     const data = await callApi("get_due_cards", {});
     queue = data.cards || [];
-    totalCount = queue.length;
     reviewedCount = 0;
     if (queue.length === 0) {
       showScreen('empty');
@@ -537,13 +620,14 @@ async function loadDueCards() {
 function updateProgress() {
   const label = el('progressLabel');
   const fill = el('progressFill');
-  if (totalCount === 0) {
+  const remainingTotal = reviewedCount + queue.length + (currentCard ? 1 : 0);
+  if (remainingTotal === 0) {
     label.textContent = "";
     fill.style.width = "0%";
     return;
   }
-  label.textContent = `${reviewedCount} / ${totalCount}`;
-  fill.style.width = `${Math.round((reviewedCount / totalCount) * 100)}%`;
+  label.textContent = `${reviewedCount} / ${remainingTotal}`;
+  fill.style.width = `${Math.round((reviewedCount / remainingTotal) * 100)}%`;
 }
 
 function nextCard() {
@@ -596,13 +680,12 @@ function renderCard(card) {
     playBtn.classList.add('hidden');
   }
 
-  // Приблизні підписи інтервалів (орієнтовно, для наочності)
-  const ease = card.ease_factor || 2.5;
-  const interval = card.interval_days || 0;
-  const fmt = (days) => (days < 1 ? "сьогодні" : days < 30 ? `${Math.round(days)}д` : `${Math.round(days / 30)}міс`);
-  el('nHard').textContent = fmt(Math.max(1, interval * 1.2));
-  el('nGood').textContent = fmt(interval === 0 ? 1 : interval * ease);
-  el('nEasy').textContent = fmt((interval === 0 ? 1 : interval * ease) * 1.3);
+  // Орієнтовні підписи інтервалів під кнопками - той самий автомат
+  // станів, що й в Edge Function (лише прев'ю, реальний запис робить сервер)
+  el('nAgain').textContent = fmtPreview(fsrsPreview(card, 'again'));
+  el('nHard').textContent = fmtPreview(fsrsPreview(card, 'hard'));
+  el('nGood').textContent = fmtPreview(fsrsPreview(card, 'good'));
+  el('nEasy').textContent = fmtPreview(fsrsPreview(card, 'easy'));
 }
 
 el('card').addEventListener('click', () => {
@@ -625,13 +708,37 @@ document.querySelectorAll('.rate-btn').forEach((btn) => {
     if (!currentCard) return;
     const rating = btn.dataset.rating;
     document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = true));
+
+    let requeued = false;
     try {
-      await callApi("submit_review", { card_id: currentCard.id, rating });
+      const result = await callApi("submit_review", { card_id: currentCard.id, rating });
+      // Якщо картка має з'явитись знову протягом цієї ж сесії (кроки
+      // навчання/перевчання по хвилинах) - повертаємо її в чергу, а не
+      // вважаємо "завершеною", як у справжньому Anki
+      const dueInMinutes = (new Date(result.due_at).getTime() - Date.now()) / 60000;
+      if (result.state === 'learning' || result.state === 'relearning') {
+        const updatedCard = {
+          ...currentCard,
+          state: result.state,
+          step: result.step,
+          stability: result.stability,
+          difficulty: result.difficulty,
+          last_reviewed_at: new Date().toISOString(),
+        };
+        if (dueInMinutes <= 60) {
+          // Вставляємо трохи далі в чергу (не одразу наступною), щоб
+          // встиг минути реальний час кроку
+          const insertAt = Math.min(queue.length, 3);
+          queue.splice(insertAt, 0, updatedCard);
+          requeued = true;
+        }
+      }
     } catch (err) {
       // Тихо ігноруємо - картка вже показана, спробуємо ще раз наступного разу
     }
+
     document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = false));
-    reviewedCount += 1;
+    if (!requeued) reviewedCount += 1;
     nextCard();
   });
 });
