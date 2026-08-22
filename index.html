@@ -327,6 +327,67 @@
   .rate-good  { background: var(--good-soft);  color: var(--good); }
   .rate-easy  { background: var(--easy-soft);  color: var(--easy); }
 
+  .simple-rate-row .rate-btn {
+    font-size: 15px;
+    padding: 16px 4px;
+  }
+
+  .rate-dontknow { background: var(--again-soft); color: var(--again); }
+  .rate-know     { background: var(--good-soft);  color: var(--good); }
+
+  /* ---------- mode select ---------- */
+
+  .mode-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 8px;
+  }
+
+  .mode-btn {
+    border: 1px solid var(--rule);
+    background: var(--card-bg);
+    border-radius: var(--radius-card);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: var(--shadow);
+  }
+
+  .mode-btn:active { transform: scale(0.98); }
+
+  .mode-btn-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+  }
+
+  .mode-btn-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .mode-btn-simple { border-color: var(--good); }
+  .mode-btn-advanced { border-color: var(--easy); }
+
+  .text-link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px;
+  }
+
   /* ---------- states ---------- */
 
   .state-screen {
@@ -385,8 +446,25 @@
 <main>
   <div class="stage">
 
+    <!-- mode select -->
+    <div class="state-screen" id="stateModeSelect">
+      <div class="state-icon">📖</div>
+      <div class="state-title">Обери режим вивчення</div>
+      <div class="state-text">Можна перемкнути будь-коли, поки в застосунку.</div>
+      <div class="mode-buttons">
+        <button class="mode-btn mode-btn-simple" id="btnModeSimple">
+          <span class="mode-btn-title">🟢 Простий</span>
+          <span class="mode-btn-sub">Знаю / Не знаю</span>
+        </button>
+        <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
+          <span class="mode-btn-title">🧠 Просунутий</span>
+          <span class="mode-btn-sub">Розумний алгоритм повторення (FSRS)</span>
+        </button>
+      </div>
+    </div>
+
     <!-- loading -->
-    <div class="state-screen" id="stateLoading">
+    <div class="state-screen hidden" id="stateLoading">
       <div class="spinner"></div>
       <div class="state-text">Завантажую картки…</div>
     </div>
@@ -404,10 +482,11 @@
     <div class="state-screen hidden" id="stateEmpty">
       <div class="state-icon">🎉</div>
       <div class="state-title">На сьогодні все</div>
-      <div class="state-text">
+      <div class="state-text" id="stateEmptyText">
         Немає карток, які треба повторити прямо зараз. Повертайся пізніше —
         або додай нові картки через бота.
       </div>
+      <button class="text-link-btn" id="btnBackToModeSelectEmpty">🔄 Обрати інший режим</button>
     </div>
 
     <!-- done with session -->
@@ -415,6 +494,7 @@
       <div class="state-icon">✅</div>
       <div class="state-title">Сесію завершено</div>
       <div class="state-text" id="stateDoneText"></div>
+      <button class="text-link-btn" id="btnBackToModeSelectDone">🔄 Обрати інший режим</button>
     </div>
 
     <!-- study -->
@@ -444,11 +524,16 @@
         </div>
       </div>
 
-      <div class="rate-row" id="rateRow">
+      <div class="rate-row hidden" id="rateRow">
         <button class="rate-btn rate-again" data-rating="again">Again<span class="n" id="nAgain"></span></button>
         <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
         <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
         <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
+      </div>
+
+      <div class="rate-row simple-rate-row hidden" id="simpleRateRow">
+        <button class="rate-btn rate-dontknow" data-simple="dontknow">❌ Не знаю</button>
+        <button class="rate-btn rate-know" data-simple="know">✅ Знаю</button>
       </div>
     </div>
 
@@ -572,6 +657,7 @@ if (tg) tg.onEvent('themeChanged', applyTheme);
 const el = (id) => document.getElementById(id);
 
 const screens = {
+  modeSelect: el('stateModeSelect'),
   loading: el('stateLoading'),
   error: el('stateError'),
   empty: el('stateEmpty'),
@@ -584,6 +670,7 @@ function showScreen(name) {
   screens[name].classList.remove('hidden');
 }
 
+let currentMode = null; // 'simple' | 'advanced'
 let queue = [];
 let currentCard = null;
 let flipped = false;
@@ -610,6 +697,32 @@ async function loadDueCards() {
     queue = data.cards || [];
     reviewedCount = 0;
     if (queue.length === 0) {
+      el('stateEmptyText').textContent =
+        "Немає карток, які треба повторити прямо зараз. Повертайся пізніше — або додай нові картки через бота.";
+      showScreen('empty');
+      updateProgress();
+      return;
+    }
+    showScreen('study');
+    nextCard();
+  } catch (e) {
+    el('stateErrorText').textContent =
+      e.message === "invalid_init_data"
+        ? "Відкрий цей застосунок через кнопку в Telegram-боті (не напряму в браузері)."
+        : "Щось пішло не так. Спробуй ще раз трохи пізніше.";
+    showScreen('error');
+  }
+}
+
+async function loadUnknownCards() {
+  showScreen('loading');
+  try {
+    const data = await callApi("get_unknown_cards", {});
+    queue = data.cards || [];
+    reviewedCount = 0;
+    if (queue.length === 0) {
+      el('stateEmptyText').textContent =
+        "Усі картки вже позначені як «Знаю» 🎉 Додай нові через бота, або перемкнись на «Просунутий» режим.";
       showScreen('empty');
       updateProgress();
       return;
@@ -642,12 +755,15 @@ function nextCard() {
   flipped = false;
   el('card').classList.remove('flipped');
   el('rateRow').classList.remove('visible');
+  el('simpleRateRow').classList.remove('visible');
 
   if (queue.length === 0) {
     el('stateDoneText').textContent =
-      reviewedCount > 0
-        ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
-        : "Повертайся пізніше.";
+      currentMode === 'simple'
+        ? `Усі картки вивчено! Позначено «Знаю»: ${reviewedCount}. 🎉`
+        : reviewedCount > 0
+          ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
+          : "Повертайся пізніше.";
     showScreen('done');
     updateProgress();
     return;
@@ -688,18 +804,26 @@ function renderCard(card) {
     playBtn.classList.add('hidden');
   }
 
-  // Орієнтовні підписи інтервалів під кнопками - той самий автомат
-  // станів, що й в Edge Function (лише прев'ю, реальний запис робить сервер)
-  el('nAgain').textContent = fmtPreview(fsrsPreview(card, 'again'));
-  el('nHard').textContent = fmtPreview(fsrsPreview(card, 'hard'));
-  el('nGood').textContent = fmtPreview(fsrsPreview(card, 'good'));
-  el('nEasy').textContent = fmtPreview(fsrsPreview(card, 'easy'));
+  if (currentMode === 'simple') {
+    el('rateRow').classList.add('hidden');
+    el('simpleRateRow').classList.remove('hidden');
+  } else {
+    el('simpleRateRow').classList.add('hidden');
+    el('rateRow').classList.remove('hidden');
+    // Орієнтовні підписи інтервалів під кнопками - той самий автомат
+    // станів, що й в Edge Function (лише прев'ю, реальний запис робить сервер)
+    el('nAgain').textContent = fmtPreview(fsrsPreview(card, 'again'));
+    el('nHard').textContent = fmtPreview(fsrsPreview(card, 'hard'));
+    el('nGood').textContent = fmtPreview(fsrsPreview(card, 'good'));
+    el('nEasy').textContent = fmtPreview(fsrsPreview(card, 'easy'));
+  }
 }
 
 el('card').addEventListener('click', () => {
   flipped = !flipped;
   el('card').classList.toggle('flipped', flipped);
   el('rateRow').classList.toggle('visible', flipped);
+  el('simpleRateRow').classList.toggle('visible', flipped);
 });
 
 el('playBtn').addEventListener('click', (e) => {
@@ -710,12 +834,12 @@ el('playBtn').addEventListener('click', (e) => {
   player.play().catch(() => {});
 });
 
-document.querySelectorAll('.rate-btn').forEach((btn) => {
+document.querySelectorAll('#rateRow .rate-btn').forEach((btn) => {
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (!currentCard) return;
     const rating = btn.dataset.rating;
-    document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = true));
+    document.querySelectorAll('#rateRow .rate-btn').forEach((b) => (b.disabled = true));
 
     let requeued = false;
     try {
@@ -745,13 +869,60 @@ document.querySelectorAll('.rate-btn').forEach((btn) => {
       // Тихо ігноруємо - картка вже показана, спробуємо ще раз наступного разу
     }
 
-    document.querySelectorAll('.rate-btn').forEach((b) => (b.disabled = false));
+    document.querySelectorAll('#rateRow .rate-btn').forEach((b) => (b.disabled = false));
     if (!requeued) reviewedCount += 1;
     nextCard();
   });
 });
 
-loadDueCards();
+document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!currentCard) return;
+    const known = btn.dataset.simple === 'know';
+    document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = true));
+
+    try {
+      await callApi("mark_known", { card_id: currentCard.id, known });
+    } catch (err) {
+      // Тихо ігноруємо - спробуємо ще раз наступного разу
+    }
+
+    document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
+
+    if (known) {
+      reviewedCount += 1;
+    } else {
+      // "Не знаю" - показуємо картку знову трохи пізніше в цій же сесії
+      const insertAt = Math.min(queue.length, 3);
+      queue.splice(insertAt, 0, currentCard);
+    }
+    nextCard();
+  });
+});
+
+el('btnModeSimple').addEventListener('click', () => {
+  currentMode = 'simple';
+  loadUnknownCards();
+});
+
+el('btnModeAdvanced').addEventListener('click', () => {
+  currentMode = 'advanced';
+  loadDueCards();
+});
+
+function backToModeSelect() {
+  currentMode = null;
+  queue = [];
+  currentCard = null;
+  reviewedCount = 0;
+  showScreen('modeSelect');
+}
+
+el('btnBackToModeSelectEmpty').addEventListener('click', backToModeSelect);
+el('btnBackToModeSelectDone').addEventListener('click', backToModeSelect);
+
+showScreen('modeSelect');
 </script>
 </body>
 </html>
