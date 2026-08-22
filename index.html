@@ -502,6 +502,14 @@ function fsrsIntervalFromStability(S) {
 const LEARNING_STEPS_MIN = [1, 10];
 const RELEARNING_STEPS_MIN = [10];
 
+/** Час для Hard - середнє між поточним і наступним кроком (не збігається
+    з Again, навіть на першому кроці) - та сама логіка, що й в Edge Function. */
+function hardStepMinutes(steps, step) {
+  const idx = Math.min(step, steps.length - 1);
+  const next = idx + 1 < steps.length ? steps[idx + 1] : steps[idx] * 2;
+  return Math.round((steps[idx] + next) / 2);
+}
+
 /** Прев'ю одного варіанту оцінки - повторює ту саму логіку автомату
     станів, що й Edge Function, лише для показу підпису на кнопці. */
 function fsrsPreview(card, ratingName) {
@@ -514,7 +522,7 @@ function fsrsPreview(card, ratingName) {
   if (state === 'new' || state === 'learning') {
     const steps = LEARNING_STEPS_MIN;
     if (rating === 1) return { unit: 'min', value: steps[0] };
-    if (rating === 2) return { unit: 'min', value: steps[Math.min(step, steps.length - 1)] };
+    if (rating === 2) return { unit: 'min', value: hardStepMinutes(steps, step) };
     if (rating === 4) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(4)) };
     // good
     if (step + 1 >= steps.length) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(3)) };
@@ -524,7 +532,7 @@ function fsrsPreview(card, ratingName) {
   if (state === 'relearning') {
     const steps = RELEARNING_STEPS_MIN;
     if (rating === 1) return { unit: 'min', value: steps[0] };
-    if (rating === 2) return { unit: 'min', value: steps[Math.min(step, steps.length - 1)] };
+    if (rating === 2) return { unit: 'min', value: hardStepMinutes(steps, step) };
     if (step + 1 >= steps.length || rating === 4) return { unit: 'day', value: fsrsIntervalFromStability(stability) };
     return { unit: 'min', value: steps[step + 1] };
   }
