@@ -1134,7 +1134,7 @@ async function callApi(action, payload) {
 
 /** Людські повідомлення замість технічних кодів помилок. */
 function errorText(e) {
-  const code = e && e.message ? e.message : "";
+  const code = e && e.message ? String(e.message) : "";
   const map = {
     invalid_init_data: "Відкрий застосунок через кнопку в Telegram-боті (не напряму в браузері).",
     folder_exists: "Папка з такою назвою вже існує.",
@@ -1149,7 +1149,20 @@ function errorText(e) {
     translator_not_configured: "Перекладач ще не налаштований власником бота.",
     translate_failed: "Не вдалося перекласти. Спробуй ще раз трохи пізніше.",
   };
-  return map[code] || "Щось пішло не так. Спробуй ще раз трохи пізніше.";
+  if (map[code]) return map[code];
+
+  // Дві типові помилки НАЛАШТУВАННЯ (а не роботи) - показуємо прямо,
+  // що саме треба доробити, щоб не гадати над "щось пішло не так".
+  if (code === "unknown_action") {
+    return "⚙️ Edge Function ще старої версії. Розгорни оновлену (крок 2 інструкції).";
+  }
+  if (/folders|column|relation|does not exist|schema cache/i.test(code)) {
+    return "⚙️ База даних ще не оновлена. Виконай migration_folders.sql (крок 1 інструкції).";
+  }
+
+  // Будь-що інше - показуємо технічний код у дужках: так одразу видно,
+  // що саме зламалось, замість безликого "щось пішло не так"
+  return "Щось пішло не так" + (code ? ` (${code.slice(0, 90)})` : "") + ".";
 }
 
 // ==================== ДРІБНІ ХЕЛПЕРИ UI ====================
@@ -1293,6 +1306,15 @@ async function loadOverview() {
       el('tabbar').classList.add('hidden');
       return false;
     }
+    // Не лишаємо вкладку "Вчити" з вічним спінером - показуємо, що саме
+    // не так, прямо на екрані (а не лише коротким спливаючим написом)
+    el('studyScopeList').innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">⚠️</div>
+        <div class="state-title">Не вдалося завантажити</div>
+        <div class="state-text">${escapeHtml(errorText(e))}</div>
+      </div>`;
+    el('studyHint').textContent = '';
     toast(errorText(e));
     return false;
   }
