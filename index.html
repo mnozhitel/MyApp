@@ -31,7 +31,10 @@
     --good-soft: #e4efec;
     --easy: #35618f;
     --easy-soft: #e2ebf3;
+    --danger: #b4432f;
+    --danger-soft: #f6e3df;
     --shadow: 0 18px 40px -22px rgba(30, 25, 15, 0.45);
+    --sheet-scrim: rgba(30, 25, 15, 0.42);
   }
 
   :root[data-theme="dark"] {
@@ -51,7 +54,10 @@
     --good-soft: #1f3129;
     --easy: #7ba7d6;
     --easy-soft: #1e2b38;
+    --danger: #e2796a;
+    --danger-soft: #34211f;
     --shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+    --sheet-scrim: rgba(0, 0, 0, 0.6);
   }
 
   * { box-sizing: border-box; }
@@ -71,8 +77,12 @@
     flex-direction: column;
   }
 
+  button { font-family: inherit; }
+
+  /* ---------- top bar ---------- */
+
   .topbar {
-    padding: 18px 20px 10px;
+    padding: 16px 20px 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -80,8 +90,9 @@
 
   .topbar-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
+    gap: 12px;
   }
 
   .brand {
@@ -91,9 +102,7 @@
     letter-spacing: 0.01em;
   }
 
-  .brand span {
-    color: var(--accent);
-  }
+  .brand span { color: var(--accent); }
 
   .progress-label {
     font-size: 13px;
@@ -119,26 +128,247 @@
   main {
     flex: 1;
     display: flex;
+    flex-direction: column;
+    padding: 4px 20px 24px;
+  }
+
+  main.centered {
     align-items: center;
     justify-content: center;
-    padding: 12px 20px 28px;
   }
+
+  body.has-tabbar main { padding-bottom: 92px; }
 
   .stage {
     width: 100%;
-    max-width: 420px;
+    max-width: 460px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 22px;
+    gap: 18px;
   }
 
-  /* ---------- card ---------- */
+  .stage.center { align-items: center; }
 
-  .card-wrap {
+  /* Кожна вкладка - колонка з рівномірними відступами між блоками */
+  main section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ---------- shared bits ---------- */
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .section-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .section-note {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .row {
     width: 100%;
-    perspective: 1400px;
+    border: 1px solid var(--rule);
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
   }
+
+  .row:active { transform: scale(0.99); }
+
+  .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+  .row-title {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-title.serif { font-family: 'Lora', serif; font-size: 16.5px; }
+
+  .row-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-emoji { font-size: 20px; flex-shrink: 0; }
+
+  .pill {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .pill.quiet { background: transparent; color: var(--muted); font-weight: 500; }
+
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .chips::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex-shrink: 0;
+    border: 1px solid var(--rule);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .chip.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .btn {
+    border: none;
+    border-radius: var(--radius-btn);
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+  .btn-primary { background: var(--accent); color: var(--page-bg); }
+  .btn-soft { background: var(--accent-soft); color: var(--accent); }
+  .btn-outline { background: transparent; border: 1px solid var(--rule); color: var(--ink); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); }
+  .btn-block { width: 100%; }
+
+  .text-link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .input, .textarea, .select {
+    width: 100%;
+    border: 1px solid var(--rule);
+    background: var(--card-bg);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .input:focus, .textarea:focus, .select:focus { border-color: var(--accent); }
+
+  .textarea { resize: vertical; min-height: 88px; line-height: 1.45; }
+
+  .select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 36px;
+  }
+
+  .row-inline { display: flex; gap: 8px; }
+  .row-inline > .input { flex: 1; }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .seg {
+    display: flex;
+    gap: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 4px;
+  }
+
+  .seg button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 10px 2px;
+    font-size: 12.5px;
+    line-height: 1.3;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .seg button.active { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- card (study) ---------- */
+
+  .card-wrap { width: 100%; perspective: 1400px; }
 
   .card {
     position: relative;
@@ -149,9 +379,7 @@
     cursor: pointer;
   }
 
-  .card.flipped {
-    transform: rotateY(180deg);
-  }
+  .card.flipped { transform: rotateY(180deg); }
 
   .card-face {
     position: absolute;
@@ -166,8 +394,7 @@
 
   .card-front {
     background: var(--card-bg);
-    background-image:
-      linear-gradient(var(--rule) 1px, transparent 1px);
+    background-image: linear-gradient(var(--rule) 1px, transparent 1px);
     background-size: 100% 34px;
     background-position: 0 128px;
     align-items: center;
@@ -248,10 +475,7 @@
     margin-bottom: 4px;
   }
 
-  .definition {
-    font-size: 15px;
-    line-height: 1.5;
-  }
+  .definition { font-size: 15px; line-height: 1.5; }
 
   .examples {
     list-style: none;
@@ -261,29 +485,14 @@
     flex-direction: column;
     gap: 6px;
     font-size: 14px;
-    color: var(--ink);
     opacity: 0.9;
   }
 
-  .examples li {
-    padding-left: 14px;
-    position: relative;
-    line-height: 1.4;
-  }
+  .examples li { padding-left: 14px; position: relative; line-height: 1.4; }
 
-  .examples li::before {
-    content: "—";
-    position: absolute;
-    left: 0;
-    color: var(--muted);
-  }
+  .examples li::before { content: "—"; position: absolute; left: 0; color: var(--muted); }
 
-  .card-img {
-    width: 100%;
-    border-radius: 12px;
-    max-height: 140px;
-    object-fit: cover;
-  }
+  .card-img { width: 100%; border-radius: 12px; max-height: 140px; object-fit: cover; }
 
   /* ---------- rating buttons ---------- */
 
@@ -297,18 +506,13 @@
     transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
-  .rate-row.visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
+  .rate-row.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
   .rate-btn {
     flex: 1;
     border: none;
     border-radius: var(--radius-btn);
     padding: 12px 4px 10px;
-    font-family: inherit;
     font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
@@ -319,7 +523,6 @@
   }
 
   .rate-btn:active { transform: scale(0.95); }
-
   .rate-btn .n { font-size: 10px; font-weight: 500; opacity: 0.75; }
 
   .rate-again { background: var(--again-soft); color: var(--again); }
@@ -327,10 +530,7 @@
   .rate-good  { background: var(--good-soft);  color: var(--good); }
   .rate-easy  { background: var(--easy-soft);  color: var(--easy); }
 
-  .simple-rate-row .rate-btn {
-    font-size: 15px;
-    padding: 16px 4px;
-  }
+  .simple-rate-row .rate-btn { font-size: 15px; padding: 16px 4px; }
 
   .rate-dontknow { background: var(--again-soft); color: var(--again); }
   .rate-know     { background: var(--good-soft);  color: var(--good); }
@@ -342,8 +542,6 @@
     flex-direction: column;
     gap: 12px;
     width: 100%;
-    max-width: 320px;
-    margin-top: 8px;
   }
 
   .mode-btn {
@@ -358,35 +556,17 @@
     cursor: pointer;
     text-align: left;
     box-shadow: var(--shadow);
+    color: inherit;
   }
 
   .mode-btn:active { transform: scale(0.98); }
+  .mode-btn:disabled { opacity: 0.5; }
 
-  .mode-btn-title {
-    font-family: 'Lora', serif;
-    font-weight: 600;
-    font-size: 17px;
-    color: var(--ink);
-  }
-
-  .mode-btn-sub {
-    font-size: 12.5px;
-    color: var(--muted);
-  }
+  .mode-btn-title { font-family: 'Lora', serif; font-weight: 600; font-size: 17px; }
+  .mode-btn-sub { font-size: 12.5px; color: var(--muted); }
 
   .mode-btn-simple { border-color: var(--good); }
   .mode-btn-advanced { border-color: var(--easy); }
-
-  .text-link-btn {
-    background: none;
-    border: none;
-    color: var(--accent);
-    font-family: inherit;
-    font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 6px;
-  }
 
   /* ---------- states ---------- */
 
@@ -401,18 +581,9 @@
 
   .state-icon { font-size: 40px; }
 
-  .state-title {
-    font-family: 'Lora', serif;
-    font-weight: 600;
-    font-size: 20px;
-  }
+  .state-title { font-family: 'Lora', serif; font-weight: 600; font-size: 20px; }
 
-  .state-text {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
-    max-width: 280px;
-  }
+  .state-text { color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 300px; }
 
   .spinner {
     width: 26px;
@@ -423,12 +594,121 @@
     animation: spin 0.8s linear infinite;
   }
 
+  .spinner.sm { width: 16px; height: 16px; border-width: 2px; }
+
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- tab bar ---------- */
+
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    background: var(--card-bg);
+    border-top: 1px solid var(--rule);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+  }
+
+  .tabbar button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 12px;
+  }
+
+  .tabbar button .ic { font-size: 19px; line-height: 1; }
+  .tabbar button.active { color: var(--accent); }
+
+  /* ---------- sheet (modal) ---------- */
+
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: var(--sheet-scrim);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: var(--page-bg);
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid var(--rule);
+    padding: 18px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: sheet-in 0.24s ease;
+  }
+
+  @keyframes sheet-in { from { transform: translateY(18px); opacity: 0.6; } }
+
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .sheet-title { font-family: 'Lora', serif; font-weight: 600; font-size: 18px; }
+
+  .sheet-close {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+
+  .sheet-actions { display: flex; gap: 8px; }
+  .sheet-actions .btn { flex: 1; }
+
+  /* ---------- toast ---------- */
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 96px;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--ink);
+    color: var(--page-bg);
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 500;
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .hidden { display: none !important; }
 
   @media (prefers-reduced-motion: reduce) {
-    .card, .rate-row, .progress-fill { transition: none !important; }
+    .card, .rate-row, .progress-fill, .sheet, .toast { transition: none !important; animation: none !important; }
     .spinner { animation: none; }
   }
 </style>
@@ -437,115 +717,270 @@
 
 <div class="topbar">
   <div class="topbar-row">
-    <div class="brand">📖 Мій <span>словник</span></div>
+    <div class="brand" id="brandTitle">📖 Мій <span>словник</span></div>
     <div class="progress-label" id="progressLabel"></div>
   </div>
-  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-track hidden" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
-<main>
-  <div class="stage">
+<main id="main">
+  <div class="stage" id="stage">
 
-    <!-- mode select -->
-    <div class="state-screen" id="stateModeSelect">
-      <div class="state-icon">📖</div>
-      <div class="state-title">Обери режим вивчення</div>
-      <div class="state-text">Можна перемкнути будь-коли, поки в застосунку.</div>
-      <div class="mode-buttons">
-        <button class="mode-btn mode-btn-simple" id="btnModeSimple">
-          <span class="mode-btn-title">🟢 Простий</span>
-          <span class="mode-btn-sub">Знаю / Не знаю</span>
-        </button>
-        <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
-          <span class="mode-btn-title">🧠 Просунутий</span>
-          <span class="mode-btn-sub">Розумний алгоритм повторення (FSRS)</span>
-        </button>
+    <!-- ======================= ВКЛАДКА: ВЧИТИ ======================= -->
+    <section id="viewStudy" class="hidden">
+      <div class="section-head">
+        <div class="section-title">Що вчимо?</div>
+        <div class="section-note" id="studyHint">Обери набір</div>
       </div>
-    </div>
+      <div class="list" id="studyScopeList"></div>
+    </section>
 
-    <!-- loading -->
-    <div class="state-screen hidden" id="stateLoading">
-      <div class="spinner"></div>
-      <div class="state-text">Завантажую картки…</div>
-    </div>
-
-    <!-- error / not opened via Telegram -->
-    <div class="state-screen hidden" id="stateError">
-      <div class="state-icon">⚠️</div>
-      <div class="state-title">Не вдалося завантажити</div>
-      <div class="state-text" id="stateErrorText">
-        Відкрий цей застосунок через кнопку в Telegram-боті.
+    <!-- ======================= ВКЛАДКА: КАРТКИ ======================= -->
+    <section id="viewCards" class="hidden">
+      <div class="row-inline">
+        <input class="input" id="cardSearch" type="search" placeholder="Пошук слова чи визначення…" autocomplete="off">
+        <button class="btn btn-outline" id="btnManageFolders" style="padding:12px 14px;">🗂</button>
       </div>
-    </div>
-
-    <!-- empty -->
-    <div class="state-screen hidden" id="stateEmpty">
-      <div class="state-icon">🎉</div>
-      <div class="state-title">На сьогодні все</div>
-      <div class="state-text" id="stateEmptyText">
-        Немає карток, які треба повторити прямо зараз. Повертайся пізніше —
-        або додай нові картки через бота.
+      <div class="chips" id="cardFolderChips"></div>
+      <div class="section-head">
+        <div class="section-title">Мої картки</div>
+        <div class="section-note" id="cardsCount"></div>
       </div>
-      <button class="text-link-btn" id="btnBackToModeSelectEmpty">🔄 Обрати інший режим</button>
-    </div>
+      <div class="list" id="cardList"></div>
+      <button class="btn btn-outline btn-block hidden" id="btnLoadMore">Показати ще</button>
+    </section>
 
-    <!-- done with session -->
-    <div class="state-screen hidden" id="stateDone">
-      <div class="state-icon">✅</div>
-      <div class="state-title">Сесію завершено</div>
-      <div class="state-text" id="stateDoneText"></div>
-      <button class="text-link-btn" id="btnBackToModeSelectDone">🔄 Обрати інший режим</button>
-    </div>
+    <!-- ======================= ВКЛАДКА: СТВОРИТИ ======================= -->
+    <section id="viewCreate" class="hidden">
+      <div class="seg" id="createModeSeg">
+        <button data-mode="lookup" class="active">📖 Визначення</button>
+        <button data-mode="translate">🌐 Переклад</button>
+        <button data-mode="manual">✍️ Вручну</button>
+      </div>
 
-    <!-- study -->
-    <div id="stateStudy" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:22px;">
-      <div class="card-wrap">
-        <div class="card" id="card">
-          <div class="card-face card-front">
-            <div class="eyebrow">Слово</div>
-            <div class="word" id="wordFront"></div>
-            <div class="tap-hint">торкнись, щоб перевернути</div>
+      <!-- пошук значення / переклад -->
+      <div id="createFetchBlock">
+        <div class="field" style="gap:10px;">
+          <div class="hint" id="createModeHint"></div>
+          <div class="row-inline">
+            <input class="input" id="createQuery" type="text" placeholder="Слово або фраза" autocomplete="off" autocapitalize="none">
+            <button class="btn btn-primary" id="btnFetch" style="padding:12px 18px;">Знайти</button>
           </div>
-          <div class="card-face card-back">
-            <div class="word-small">
-              <span id="wordBack"></span>
-              <button class="play-btn hidden" id="playBtn" aria-label="Відтворити вимову">▶</button>
-            </div>
-            <img class="card-img hidden" id="cardImg" alt="">
-            <div>
-              <div class="section-label">Визначення</div>
-              <div class="definition" id="definition"></div>
-            </div>
-            <div id="examplesWrap">
-              <div class="section-label">Приклади</div>
-              <ul class="examples" id="examples"></ul>
-            </div>
-          </div>
+          <select class="select hidden" id="createLangSelect"></select>
         </div>
       </div>
 
-      <div class="rate-row hidden" id="rateRow">
-        <button class="rate-btn rate-again" data-rating="again">Again<span class="n" id="nAgain"></span></button>
-        <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
-        <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
-        <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
+      <!-- чернетка картки (спільна для всіх трьох режимів) -->
+      <div id="createDraft" class="hidden" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="section-head">
+          <div class="section-title">Картка</div>
+          <div class="section-note" id="draftSource"></div>
+        </div>
+        <img class="card-img hidden" id="draftImg" alt="">
+        <div class="field">
+          <label class="field-label" for="draftWord">Слово / фраза</label>
+          <input class="input" id="draftWord" type="text" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="field-label" for="draftDefinition" id="draftDefLabel">Визначення</label>
+          <textarea class="textarea" id="draftDefinition" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label" for="draftExamples">Приклади <span style="text-transform:none; letter-spacing:0;">(кожен з нового рядка)</span></label>
+          <textarea class="textarea" id="draftExamples" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label" for="draftFolder">Папка</label>
+          <select class="select" id="draftFolder"></select>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn-outline" id="btnDraftReset">Очистити</button>
+          <button class="btn btn-primary" id="btnDraftSave">Зберегти картку</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= СЕСІЯ ВИВЧЕННЯ ======================= -->
+    <section id="viewSession" class="hidden">
+
+      <!-- вибір режиму -->
+      <div class="state-screen" id="stateModeSelect">
+        <div class="state-icon">📖</div>
+        <div class="state-title" id="modeSelectTitle">Обери режим вивчення</div>
+        <div class="state-text" id="modeSelectSub">Можна перемкнути будь-коли.</div>
+        <div class="mode-buttons">
+          <button class="mode-btn mode-btn-simple" id="btnModeSimple">
+            <span class="mode-btn-title">🟢 Простий</span>
+            <span class="mode-btn-sub" id="modeSimpleSub">Знаю / Не знаю</span>
+          </button>
+          <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
+            <span class="mode-btn-title">🧠 Просунутий</span>
+            <span class="mode-btn-sub" id="modeAdvancedSub">Розумний алгоритм повторення (FSRS)</span>
+          </button>
+        </div>
+        <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
       </div>
 
-      <div class="rate-row simple-rate-row hidden" id="simpleRateRow">
-        <button class="rate-btn rate-dontknow" data-simple="dontknow">❌ Не знаю</button>
-        <button class="rate-btn rate-know" data-simple="know">✅ Знаю</button>
+      <!-- завантаження -->
+      <div class="state-screen hidden" id="stateLoading">
+        <div class="spinner"></div>
+        <div class="state-text">Завантажую картки…</div>
       </div>
-    </div>
+
+      <!-- помилка -->
+      <div class="state-screen hidden" id="stateError">
+        <div class="state-icon">⚠️</div>
+        <div class="state-title">Не вдалося завантажити</div>
+        <div class="state-text" id="stateErrorText">Відкрий цей застосунок через кнопку в Telegram-боті.</div>
+        <button class="text-link-btn" id="btnBackFromError">← Назад</button>
+      </div>
+
+      <!-- порожньо -->
+      <div class="state-screen hidden" id="stateEmpty">
+        <div class="state-icon">🎉</div>
+        <div class="state-title">На сьогодні все</div>
+        <div class="state-text" id="stateEmptyText"></div>
+        <button class="text-link-btn" id="btnBackToModeSelectEmpty">🔄 Обрати інший режим</button>
+      </div>
+
+      <!-- сесію завершено -->
+      <div class="state-screen hidden" id="stateDone">
+        <div class="state-icon">✅</div>
+        <div class="state-title">Сесію завершено</div>
+        <div class="state-text" id="stateDoneText"></div>
+        <button class="text-link-btn" id="btnBackToModeSelectDone">🔄 Обрати інший режим</button>
+      </div>
+
+      <!-- картка -->
+      <div id="stateStudy" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:22px;">
+        <div class="card-wrap">
+          <div class="card" id="card">
+            <div class="card-face card-front">
+              <div class="eyebrow">Слово</div>
+              <div class="word" id="wordFront"></div>
+              <div class="tap-hint">торкнись, щоб перевернути</div>
+            </div>
+            <div class="card-face card-back">
+              <div class="word-small">
+                <span id="wordBack"></span>
+                <button class="play-btn" id="playBtn" aria-label="Відтворити вимову">▶</button>
+              </div>
+              <img class="card-img hidden" id="cardImg" alt="">
+              <div>
+                <div class="section-label" id="definitionLabel">Визначення</div>
+                <div class="definition" id="definition"></div>
+              </div>
+              <div id="examplesWrap">
+                <div class="section-label">Приклади</div>
+                <ul class="examples" id="examples"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rate-row hidden" id="rateRow">
+          <button class="rate-btn rate-again" data-rating="again">Again<span class="n" id="nAgain"></span></button>
+          <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
+          <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
+          <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
+        </div>
+
+        <div class="rate-row simple-rate-row hidden" id="simpleRateRow">
+          <button class="rate-btn rate-dontknow" data-simple="dontknow">❌ Не знаю</button>
+          <button class="rate-btn rate-know" data-simple="know">✅ Знаю</button>
+        </div>
+
+        <button class="text-link-btn" id="btnQuitSession">← Завершити сесію</button>
+      </div>
+    </section>
 
   </div>
 </main>
 
+<nav class="tabbar hidden" id="tabbar">
+  <button data-tab="study" class="active"><span class="ic">🧠</span>Вчити</button>
+  <button data-tab="cards"><span class="ic">🗂</span>Картки</button>
+  <button data-tab="create"><span class="ic">➕</span>Створити</button>
+</nav>
+
+<!-- ===================== Модальне вікно: редактор картки ===================== -->
+<div class="scrim hidden" id="scrimEditor">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">Редагувати картку</div>
+      <button class="sheet-close" data-close="scrimEditor">✕</button>
+    </div>
+    <div class="field">
+      <label class="field-label" for="editWord">Слово / фраза</label>
+      <input class="input" id="editWord" type="text" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="field-label" for="editDefinition">Визначення / переклад</label>
+      <textarea class="textarea" id="editDefinition" rows="3"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label" for="editExamples">Приклади <span style="text-transform:none; letter-spacing:0;">(кожен з нового рядка)</span></label>
+      <textarea class="textarea" id="editExamples" rows="3"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label" for="editFolder">Папка</label>
+      <select class="select" id="editFolder"></select>
+    </div>
+    <div class="hint" id="editStats"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-outline" id="btnEditForget">🔄 Забути прогрес</button>
+      <button class="btn btn-primary" id="btnEditSave">Зберегти</button>
+    </div>
+    <button class="btn btn-danger btn-block" id="btnEditDelete">🗑 Видалити картку</button>
+  </div>
+</div>
+
+<!-- ===================== Модальне вікно: папки ===================== -->
+<div class="scrim hidden" id="scrimFolders">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">Папки</div>
+      <button class="sheet-close" data-close="scrimFolders">✕</button>
+    </div>
+    <div class="hint">Групуй картки за темами — і вчи окрему папку або все одразу.</div>
+    <div class="row-inline">
+      <input class="input" id="newFolderName" type="text" placeholder="Назва нової папки" maxlength="60">
+      <button class="btn btn-primary" id="btnCreateFolder" style="padding:12px 18px;">Додати</button>
+    </div>
+    <div class="list" id="folderManageList"></div>
+  </div>
+</div>
+
+<!-- ===================== Модальне вікно: підтвердження ===================== -->
+<div class="scrim hidden" id="scrimConfirm">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="confirmTitle">Підтвердження</div>
+      <button class="sheet-close" data-close="scrimConfirm">✕</button>
+    </div>
+    <div class="hint" id="confirmText"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-outline" id="btnConfirmNo">Скасувати</button>
+      <button class="btn btn-danger" id="btnConfirmYes">Видалити</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 <audio id="audioPlayer" class="hidden"></audio>
 
 <script>
 // ==================== НАЛАШТУВАННЯ ====================
 const EDGE_FUNCTION_URL = "https://cfapayxqkldioxukfpvf.supabase.co/functions/v1/study-api";
 // ========================================================
+
+// Мови для режиму "Переклад" - той самий список, що і в боті (/settings)
+const LANGUAGES = [
+  ["uk", "🇺🇦 Українська"], ["pl", "🇵🇱 Polski"], ["de", "🇩🇪 Deutsch"],
+  ["fr", "🇫🇷 Français"], ["es", "🇪🇸 Español"], ["it", "🇮🇹 Italiano"],
+  ["pt", "🇵🇹 Português"], ["tr", "🇹🇷 Türkçe"], ["ru", "🇷🇺 Русский"],
+  ["ja", "🇯🇵 日本語"], ["ko", "🇰🇷 한국어"], ["zh-Hans", "🇨🇳 中文"],
+];
 
 // ---- FSRS-6 (ті самі формули й параметри, що й у Edge Function) ----
 // Використовується ЛИШЕ для показу орієнтовних підписів під кнопками
@@ -609,7 +1044,6 @@ function fsrsPreview(card, ratingName) {
     if (rating === 1) return { unit: 'min', value: steps[0] };
     if (rating === 2) return { unit: 'min', value: hardStepMinutes(steps, step) };
     if (rating === 4) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(4)) };
-    // good
     if (step + 1 >= steps.length) return { unit: 'day', value: fsrsIntervalFromStability(fsrsInitStability(3)) };
     return { unit: 'min', value: steps[step + 1] };
   }
@@ -622,7 +1056,6 @@ function fsrsPreview(card, ratingName) {
     return { unit: 'min', value: steps[step + 1] };
   }
 
-  // review
   const elapsedDays = card.last_reviewed_at
     ? Math.max(0, (Date.now() - new Date(card.last_reviewed_at).getTime()) / 86400000)
     : 0;
@@ -654,27 +1087,38 @@ function applyTheme() {
 applyTheme();
 if (tg) tg.onEvent('themeChanged', applyTheme);
 
-const el = (id) => document.getElementById(id);
-
-const screens = {
-  modeSelect: el('stateModeSelect'),
-  loading: el('stateLoading'),
-  error: el('stateError'),
-  empty: el('stateEmpty'),
-  done: el('stateDone'),
-  study: el('stateStudy'),
-};
-
-function showScreen(name) {
-  Object.values(screens).forEach((s) => s.classList.add('hidden'));
-  screens[name].classList.remove('hidden');
+function haptic(style) {
+  try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light'); } catch (e) {}
 }
 
-let currentMode = null; // 'simple' | 'advanced'
-let queue = [];
-let currentCard = null;
-let flipped = false;
-let reviewedCount = 0;
+const el = (id) => document.getElementById(id);
+
+// ==================== ЗАГАЛЬНИЙ СТАН ====================
+
+const state = {
+  tab: 'study',            // 'study' | 'cards' | 'create'
+  inSession: false,        // чи йде зараз сесія вивчення (ховає таб-бар)
+  folders: [],             // [{id, name, total, due, unknown}]
+  noFolder: { total: 0, due: 0, unknown: 0 },
+  totals: { total: 0, due: 0, unknown: 0 },
+  overviewLoaded: false,
+
+  studyScope: 'all',       // 'all' | 'none' | '<uuid>'
+  studyScopeName: 'Усі картки',
+
+  cardsScope: 'all',
+  cardsSearch: '',
+  cardsOffset: 0,
+  cardsList: [],
+
+  createMode: 'lookup',    // 'lookup' | 'translate' | 'manual'
+  draftMeta: null,         // {audio_url, image_url, card_type, source}
+  editingCard: null,
+};
+
+const CARDS_PAGE_SIZE = 50;
+
+// ==================== ЗВ'ЯЗОК З СЕРВЕРОМ ====================
 
 async function callApi(action, payload) {
   const initData = tg ? tg.initData : "";
@@ -684,57 +1128,286 @@ async function callApi(action, payload) {
     body: JSON.stringify({ action, initData, ...payload }),
   });
   const data = await resp.json();
-  if (!resp.ok || data.error) {
-    throw new Error(data.error || "unknown_error");
-  }
+  if (!resp.ok || data.error) throw new Error(data.error || "unknown_error");
   return data;
 }
 
-async function loadDueCards() {
-  showScreen('loading');
-  try {
-    const data = await callApi("get_due_cards", {});
-    queue = data.cards || [];
-    reviewedCount = 0;
-    if (queue.length === 0) {
-      el('stateEmptyText').textContent =
-        "Немає карток, які треба повторити прямо зараз. Повертайся пізніше — або додай нові картки через бота.";
-      showScreen('empty');
-      updateProgress();
-      return;
-    }
-    showScreen('study');
-    nextCard();
-  } catch (e) {
-    el('stateErrorText').textContent =
-      e.message === "invalid_init_data"
-        ? "Відкрий цей застосунок через кнопку в Telegram-боті (не напряму в браузері)."
-        : "Щось пішло не так. Спробуй ще раз трохи пізніше.";
-    showScreen('error');
+/** Людські повідомлення замість технічних кодів помилок. */
+function errorText(e) {
+  const code = e && e.message ? e.message : "";
+  const map = {
+    invalid_init_data: "Відкрий застосунок через кнопку в Telegram-боті (не напряму в браузері).",
+    folder_exists: "Папка з такою назвою вже існує.",
+    folder_not_found: "Папку не знайдено — можливо, її щойно видалили.",
+    card_not_found: "Картку не знайдено — можливо, її вже видалили.",
+    empty_word: "Слово не може бути порожнім.",
+    empty_definition: "Визначення не може бути порожнім.",
+    empty_name: "Назва не може бути порожньою.",
+    word_not_recognized: "Не схоже на справжнє слово чи фразу. Перевір написання.",
+    not_found_anywhere: "Не знайшов це слово в жодному словнику.",
+    lookup_failed: "Словники зараз не відповідають. Спробуй ще раз трохи пізніше.",
+    translator_not_configured: "Перекладач ще не налаштований власником бота.",
+    translate_failed: "Не вдалося перекласти. Спробуй ще раз трохи пізніше.",
+  };
+  return map[code] || "Щось пішло не так. Спробуй ще раз трохи пізніше.";
+}
+
+// ==================== ДРІБНІ ХЕЛПЕРИ UI ====================
+
+let toastTimer = null;
+function toast(message) {
+  const t = el('toast');
+  t.textContent = message;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function openSheet(id) { el(id).classList.remove('hidden'); }
+function closeSheet(id) { el(id).classList.add('hidden'); }
+
+document.querySelectorAll('[data-close]').forEach((btn) => {
+  btn.addEventListener('click', () => closeSheet(btn.dataset.close));
+});
+
+// Клік по затемненню поза вікном - закрити
+document.querySelectorAll('.scrim').forEach((scrim) => {
+  scrim.addEventListener('click', (e) => {
+    if (e.target === scrim) scrim.classList.add('hidden');
+  });
+});
+
+/** Підтвердження у власному вікні (без системних alert/confirm). */
+let confirmResolve = null;
+function askConfirm(title, text, confirmLabel) {
+  el('confirmTitle').textContent = title;
+  el('confirmText').textContent = text;
+  el('btnConfirmYes').textContent = confirmLabel || 'Видалити';
+  openSheet('scrimConfirm');
+  return new Promise((resolve) => { confirmResolve = resolve; });
+}
+
+el('btnConfirmYes').addEventListener('click', () => {
+  closeSheet('scrimConfirm');
+  if (confirmResolve) confirmResolve(true);
+  confirmResolve = null;
+});
+el('btnConfirmNo').addEventListener('click', () => {
+  closeSheet('scrimConfirm');
+  if (confirmResolve) confirmResolve(false);
+  confirmResolve = null;
+});
+
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+function cardsWord(n) { return `${n} ${plural(n, 'картка', 'картки', 'карток')}`; }
+
+const TYPE_ICON = { definition: '📖', translation: '🌐', manual: '✍️' };
+
+/** Заповнює <select> списком папок (+ пункт "Без папки"). */
+function fillFolderSelect(selectEl, selectedId) {
+  selectEl.innerHTML = '';
+  const none = document.createElement('option');
+  none.value = 'none';
+  none.textContent = '— Без папки —';
+  selectEl.appendChild(none);
+  state.folders.forEach((f) => {
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = f.name;
+    selectEl.appendChild(opt);
+  });
+  selectEl.value = selectedId || 'none';
+}
+
+// ==================== НАВІГАЦІЯ ====================
+
+const views = {
+  study: el('viewStudy'),
+  cards: el('viewCards'),
+  create: el('viewCreate'),
+  session: el('viewSession'),
+};
+
+function showView(name) {
+  Object.values(views).forEach((v) => v.classList.add('hidden'));
+  views[name].classList.remove('hidden');
+
+  const inSession = name === 'session';
+  state.inSession = inSession;
+  el('tabbar').classList.toggle('hidden', inSession);
+  document.body.classList.toggle('has-tabbar', !inSession);
+  el('main').classList.toggle('centered', inSession);
+  el('progressTrack').classList.toggle('hidden', !inSession);
+  if (!inSession) {
+    el('progressLabel').textContent = '';
+    el('brandTitle').innerHTML = '📖 Мій <span>словник</span>';
+  }
+
+  // Кнопка "назад" самого Telegram - зручний вихід із сесії
+  if (tg && tg.BackButton) {
+    if (inSession) tg.BackButton.show(); else tg.BackButton.hide();
   }
 }
 
-async function loadUnknownCards() {
-  showScreen('loading');
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('#tabbar button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  showView(tab);
+
+  if (tab === 'study') renderStudyScopes();
+  if (tab === 'cards') { renderFolderChips(); loadCards(true); }
+  if (tab === 'create') { fillFolderSelect(el('draftFolder'), null); applyCreateMode(); }
+}
+
+document.querySelectorAll('#tabbar button').forEach((btn) => {
+  btn.addEventListener('click', () => { haptic(); switchTab(btn.dataset.tab); });
+});
+
+if (tg && tg.BackButton) {
+  tg.BackButton.onClick(() => { if (state.inSession) quitSession(); });
+}
+
+// ==================== ОГЛЯД (папки + підрахунки) ====================
+
+async function loadOverview() {
   try {
-    const data = await callApi("get_unknown_cards", {});
+    const data = await callApi('get_overview', {});
+    state.folders = data.folders || [];
+    state.noFolder = data.no_folder || { total: 0, due: 0, unknown: 0 };
+    state.totals = data.totals || { total: 0, due: 0, unknown: 0 };
+    state.overviewLoaded = true;
+    return true;
+  } catch (e) {
+    if (e.message === 'invalid_init_data') {
+      showView('session');
+      showSessionScreen('error');
+      el('stateErrorText').textContent = errorText(e);
+      el('tabbar').classList.add('hidden');
+      return false;
+    }
+    toast(errorText(e));
+    return false;
+  }
+}
+
+/** Список наборів на вкладці "Вчити": Усі картки / кожна папка / Без папки. */
+function renderStudyScopes() {
+  const list = el('studyScopeList');
+  list.innerHTML = '';
+
+  if (state.totals.total === 0) {
+    list.innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">🌱</div>
+        <div class="state-title">Ще немає карток</div>
+        <div class="state-text">Створи першу картку на вкладці «Створити» — або надішли слово боту в чат.</div>
+      </div>`;
+    el('studyHint').textContent = '';
+    return;
+  }
+
+  el('studyHint').textContent = `${cardsWord(state.totals.total)} всього`;
+
+  const makeRow = (emoji, title, scope, counts) => {
+    const btn = document.createElement('button');
+    btn.className = 'row';
+    btn.innerHTML = `
+      <span class="row-emoji">${emoji}</span>
+      <span class="row-body">
+        <span class="row-title">${escapeHtml(title)}</span>
+        <span class="row-sub">${cardsWord(counts.total)} · ${counts.unknown} не вивчено</span>
+      </span>
+      <span class="pill${counts.due ? '' : ' quiet'}">${counts.due ? '🔁 ' + counts.due : '✓'}</span>`;
+    btn.addEventListener('click', () => {
+      haptic();
+      state.studyScope = scope;
+      state.studyScopeName = title;
+      openModeSelect();
+    });
+    list.appendChild(btn);
+  };
+
+  makeRow('📚', 'Усі картки', 'all', state.totals);
+  state.folders.forEach((f) => makeRow('🗂', f.name, f.id, f));
+  if (state.noFolder.total > 0) makeRow('📄', 'Без папки', 'none', state.noFolder);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ==================== СЕСІЯ ВИВЧЕННЯ ====================
+
+const sessionScreens = {
+  modeSelect: el('stateModeSelect'),
+  loading: el('stateLoading'),
+  error: el('stateError'),
+  empty: el('stateEmpty'),
+  done: el('stateDone'),
+  study: el('stateStudy'),
+};
+
+function showSessionScreen(name) {
+  Object.values(sessionScreens).forEach((s) => s.classList.add('hidden'));
+  sessionScreens[name].classList.remove('hidden');
+}
+
+let currentMode = null; // 'simple' | 'advanced'
+let queue = [];
+let currentCard = null;
+let flipped = false;
+let reviewedCount = 0;
+
+function scopeCounts() {
+  if (state.studyScope === 'all') return state.totals;
+  if (state.studyScope === 'none') return state.noFolder;
+  return state.folders.find((f) => f.id === state.studyScope) || { total: 0, due: 0, unknown: 0 };
+}
+
+function openModeSelect() {
+  const counts = scopeCounts();
+  el('modeSelectTitle').textContent = state.studyScopeName;
+  el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
+  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено`;
+  el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
+  showView('session');
+  showSessionScreen('modeSelect');
+}
+
+async function startSession(mode) {
+  currentMode = mode;
+  reviewedCount = 0;
+  currentCard = null;
+  showSessionScreen('loading');
+  el('brandTitle').textContent = state.studyScopeName;
+
+  try {
+    const action = mode === 'simple' ? 'get_unknown_cards' : 'get_due_cards';
+    const data = await callApi(action, { folder: state.studyScope });
     queue = data.cards || [];
-    reviewedCount = 0;
+
     if (queue.length === 0) {
-      el('stateEmptyText').textContent =
-        "Усі картки вже позначені як «Знаю» 🎉 Додай нові через бота, або перемкнись на «Просунутий» режим.";
-      showScreen('empty');
+      el('stateEmptyText').textContent = mode === 'simple'
+        ? 'Усі картки в цьому наборі вже позначені як «Знаю» 🎉'
+        : 'Немає карток, які треба повторити прямо зараз. Повертайся пізніше.';
+      showSessionScreen('empty');
       updateProgress();
       return;
     }
-    showScreen('study');
+    showSessionScreen('study');
     nextCard();
   } catch (e) {
-    el('stateErrorText').textContent =
-      e.message === "invalid_init_data"
-        ? "Відкрий цей застосунок через кнопку в Telegram-боті (не напряму в браузері)."
-        : "Щось пішло не так. Спробуй ще раз трохи пізніше.";
-    showScreen('error');
+    el('stateErrorText').textContent = errorText(e);
+    showSessionScreen('error');
   }
 }
 
@@ -758,14 +1431,16 @@ function nextCard() {
   el('simpleRateRow').classList.remove('visible');
 
   if (queue.length === 0) {
+    currentCard = null;
     el('stateDoneText').textContent =
       currentMode === 'simple'
         ? `Усі картки вивчено! Позначено «Знаю»: ${reviewedCount}. 🎉`
         : reviewedCount > 0
           ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
           : "Повертайся пізніше.";
-    showScreen('done');
+    showSessionScreen('done');
     updateProgress();
+    loadOverview(); // оновлюємо лічильники на вкладці "Вчити"
     return;
   }
 
@@ -778,6 +1453,7 @@ function renderCard(card) {
   el('wordFront').textContent = card.word;
   el('wordBack').textContent = card.word;
   el('definition').textContent = card.definition;
+  el('definitionLabel').textContent = card.card_type === 'translation' ? 'Переклад' : 'Визначення';
 
   const examplesEl = el('examples');
   examplesEl.innerHTML = "";
@@ -797,12 +1473,9 @@ function renderCard(card) {
     img.classList.add('hidden');
   }
 
-  const playBtn = el('playBtn');
-  if (card.audio_url) {
-    playBtn.classList.remove('hidden');
-  } else {
-    playBtn.classList.add('hidden');
-  }
+  // Кнопка озвучення є завжди: якщо готового аудіофайлу немає (картка
+  // створена вручну в застосунку) - озвучуємо голосом самого пристрою
+  el('playBtn').classList.remove('hidden');
 
   if (currentMode === 'simple') {
     el('rateRow').classList.add('hidden');
@@ -819,6 +1492,30 @@ function renderCard(card) {
   }
 }
 
+/** Озвучення: готовий mp3, а якщо його немає - вбудований синтез мовлення. */
+function speakCard(card) {
+  if (card.audio_url) {
+    const player = el('audioPlayer');
+    player.src = card.audio_url;
+    player.play().catch(() => speakWithBrowser(card.word));
+    return;
+  }
+  speakWithBrowser(card.word);
+}
+
+function speakWithBrowser(text) {
+  try {
+    if (!window.speechSynthesis) { toast('Пристрій не вміє озвучувати текст.'); return; }
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = 0.92;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {
+    toast('Не вдалося озвучити.');
+  }
+}
+
 el('card').addEventListener('click', () => {
   flipped = !flipped;
   el('card').classList.toggle('flipped', flipped);
@@ -828,16 +1525,14 @@ el('card').addEventListener('click', () => {
 
 el('playBtn').addEventListener('click', (e) => {
   e.stopPropagation();
-  if (!currentCard || !currentCard.audio_url) return;
-  const player = el('audioPlayer');
-  player.src = currentCard.audio_url;
-  player.play().catch(() => {});
+  if (currentCard) speakCard(currentCard);
 });
 
 document.querySelectorAll('#rateRow .rate-btn').forEach((btn) => {
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (!currentCard) return;
+    haptic();
     const rating = btn.dataset.rating;
     document.querySelectorAll('#rateRow .rate-btn').forEach((b) => (b.disabled = true));
 
@@ -858,8 +1553,6 @@ document.querySelectorAll('#rateRow .rate-btn').forEach((btn) => {
           last_reviewed_at: new Date().toISOString(),
         };
         if (dueInMinutes <= 60) {
-          // Вставляємо трохи далі в чергу (не одразу наступною), щоб
-          // встиг минути реальний час кроку
           const insertAt = Math.min(queue.length, 3);
           queue.splice(insertAt, 0, updatedCard);
           requeued = true;
@@ -879,14 +1572,13 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (!currentCard) return;
+    haptic();
     const known = btn.dataset.simple === 'know';
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = true));
 
     try {
       await callApi("mark_known", { card_id: currentCard.id, known });
-    } catch (err) {
-      // Тихо ігноруємо - спробуємо ще раз наступного разу
-    }
+    } catch (err) { /* тихо ігноруємо */ }
 
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
 
@@ -901,28 +1593,506 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
   });
 });
 
-el('btnModeSimple').addEventListener('click', () => {
-  currentMode = 'simple';
-  loadUnknownCards();
-});
+el('btnModeSimple').addEventListener('click', () => startSession('simple'));
+el('btnModeAdvanced').addEventListener('click', () => startSession('advanced'));
 
-el('btnModeAdvanced').addEventListener('click', () => {
-  currentMode = 'advanced';
-  loadDueCards();
-});
-
-function backToModeSelect() {
-  currentMode = null;
+async function quitSession() {
   queue = [];
   currentCard = null;
   reviewedCount = 0;
-  showScreen('modeSelect');
+  currentMode = null;
+  await loadOverview();
+  switchTab('study');
 }
 
-el('btnBackToModeSelectEmpty').addEventListener('click', backToModeSelect);
-el('btnBackToModeSelectDone').addEventListener('click', backToModeSelect);
+el('btnQuitSession').addEventListener('click', quitSession);
+el('btnBackFromMode').addEventListener('click', quitSession);
+el('btnBackFromError').addEventListener('click', quitSession);
+el('btnBackToModeSelectEmpty').addEventListener('click', openModeSelect);
+el('btnBackToModeSelectDone').addEventListener('click', openModeSelect);
 
-showScreen('modeSelect');
+// ==================== ВКЛАДКА "КАРТКИ" ====================
+
+function renderFolderChips() {
+  const wrap = el('cardFolderChips');
+  wrap.innerHTML = '';
+
+  const addChip = (label, scope) => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (state.cardsScope === scope ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      state.cardsScope = scope;
+      renderFolderChips();
+      loadCards(true);
+    });
+    wrap.appendChild(btn);
+  };
+
+  addChip('Усі', 'all');
+  state.folders.forEach((f) => addChip(f.name, f.id));
+  if (state.noFolder.total > 0) addChip('Без папки', 'none');
+}
+
+async function loadCards(reset) {
+  if (reset) {
+    state.cardsOffset = 0;
+    state.cardsList = [];
+    el('cardList').innerHTML = '<div class="state-screen"><div class="spinner"></div></div>';
+  }
+
+  try {
+    const data = await callApi('list_cards', {
+      folder: state.cardsScope,
+      search: state.cardsSearch,
+      limit: CARDS_PAGE_SIZE,
+      offset: state.cardsOffset,
+    });
+    state.cardsList = state.cardsList.concat(data.cards || []);
+    state.cardsOffset += (data.cards || []).length;
+    el('btnLoadMore').classList.toggle('hidden', !data.has_more);
+    renderCardList();
+  } catch (e) {
+    el('cardList').innerHTML = '';
+    toast(errorText(e));
+  }
+}
+
+function renderCardList() {
+  const list = el('cardList');
+  list.innerHTML = '';
+
+  el('cardsCount').textContent = state.cardsList.length ? cardsWord(state.cardsList.length) : '';
+
+  if (state.cardsList.length === 0) {
+    list.innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">🔎</div>
+        <div class="state-text">${state.cardsSearch
+          ? 'Нічого не знайдено за цим запитом.'
+          : 'У цьому наборі ще немає карток.'}</div>
+      </div>`;
+    return;
+  }
+
+  state.cardsList.forEach((card) => {
+    const folder = state.folders.find((f) => f.id === card.folder_id);
+    const btn = document.createElement('button');
+    btn.className = 'row';
+    btn.innerHTML = `
+      <span class="row-emoji">${TYPE_ICON[card.card_type] || '📖'}</span>
+      <span class="row-body">
+        <span class="row-title serif">${escapeHtml(card.word)}</span>
+        <span class="row-sub">${escapeHtml(card.definition)}</span>
+      </span>
+      ${folder ? `<span class="pill quiet">${escapeHtml(folder.name)}</span>` : ''}`;
+    btn.addEventListener('click', () => openEditor(card));
+    list.appendChild(btn);
+  });
+}
+
+let searchTimer = null;
+el('cardSearch').addEventListener('input', (e) => {
+  state.cardsSearch = e.target.value.trim();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadCards(true), 320);
+});
+
+el('btnLoadMore').addEventListener('click', () => loadCards(false));
+
+// ---------- редактор картки ----------
+
+function openEditor(card) {
+  state.editingCard = card;
+  el('editWord').value = card.word || '';
+  el('editDefinition').value = card.definition || '';
+  el('editExamples').value = (Array.isArray(card.examples) ? card.examples : []).join('\n');
+  fillFolderSelect(el('editFolder'), card.folder_id || 'none');
+
+  const stateNames = { new: 'нова', learning: 'вивчається', review: 'на повторенні', relearning: 'перевчається' };
+  const parts = [`Стан: ${stateNames[card.state] || card.state || 'нова'}`];
+  if (card.known) parts.push('позначена «Знаю»');
+  if (card.due_at) {
+    const due = new Date(card.due_at);
+    parts.push(due.getTime() <= Date.now() ? 'чекає на повторення' : `наступне повторення ${due.toLocaleDateString('uk-UA')}`);
+  }
+  el('editStats').textContent = parts.join(' · ');
+
+  openSheet('scrimEditor');
+}
+
+el('btnEditSave').addEventListener('click', async () => {
+  if (!state.editingCard) return;
+  const btn = el('btnEditSave');
+  btn.disabled = true;
+  try {
+    const folderValue = el('editFolder').value;
+    const updated = await callApi('update_card', {
+      card_id: state.editingCard.id,
+      word: el('editWord').value,
+      definition: el('editDefinition').value,
+      examples: el('editExamples').value.split('\n').map((s) => s.trim()).filter(Boolean),
+      folder_id: folderValue === 'none' ? null : folderValue,
+    });
+    // Оновлюємо картку в уже завантаженому списку, не перезавантажуючи все
+    const idx = state.cardsList.findIndex((c) => c.id === state.editingCard.id);
+    if (idx !== -1) state.cardsList[idx] = { ...state.cardsList[idx], ...updated.card };
+    closeSheet('scrimEditor');
+    renderCardList();
+    loadOverview();
+    toast('Збережено');
+  } catch (e) {
+    toast(errorText(e));
+  }
+  btn.disabled = false;
+});
+
+el('btnEditForget').addEventListener('click', async () => {
+  if (!state.editingCard) return;
+  const ok = await askConfirm(
+    'Забути прогрес?',
+    'Картка знову стане новою: історія повторень обнулиться, і вона з’явиться в наступній сесії з нуля. Текст картки залишиться.',
+    'Забути',
+  );
+  if (!ok) return;
+
+  try {
+    const updated = await callApi('update_card', { card_id: state.editingCard.id, reset_progress: true });
+    const idx = state.cardsList.findIndex((c) => c.id === state.editingCard.id);
+    if (idx !== -1) state.cardsList[idx] = { ...state.cardsList[idx], ...updated.card };
+    closeSheet('scrimEditor');
+    renderCardList();
+    loadOverview();
+    toast('Прогрес скинуто');
+  } catch (e) {
+    toast(errorText(e));
+  }
+});
+
+el('btnEditDelete').addEventListener('click', async () => {
+  if (!state.editingCard) return;
+  const ok = await askConfirm(
+    'Видалити картку?',
+    `«${state.editingCard.word}» буде видалено назавжди. Цю дію не можна скасувати.`,
+    'Видалити',
+  );
+  if (!ok) return;
+
+  try {
+    await callApi('delete_card', { card_id: state.editingCard.id });
+    state.cardsList = state.cardsList.filter((c) => c.id !== state.editingCard.id);
+    closeSheet('scrimEditor');
+    renderCardList();
+    loadOverview();
+    toast('Картку видалено');
+  } catch (e) {
+    toast(errorText(e));
+  }
+});
+
+// ---------- керування папками ----------
+
+el('btnManageFolders').addEventListener('click', () => {
+  renderFolderManageList();
+  openSheet('scrimFolders');
+});
+
+function renderFolderManageList() {
+  const list = el('folderManageList');
+  list.innerHTML = '';
+
+  if (state.folders.length === 0) {
+    list.innerHTML = '<div class="hint">Папок ще немає. Створи першу — наприклад «Phrasal verbs» чи «Робота».</div>';
+    return;
+  }
+
+  state.folders.forEach((f) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.cursor = 'default';
+    row.innerHTML = `
+      <span class="row-emoji">🗂</span>
+      <span class="row-body">
+        <span class="row-title">${escapeHtml(f.name)}</span>
+        <span class="row-sub">${cardsWord(f.total)}</span>
+      </span>`;
+
+    const rename = document.createElement('button');
+    rename.className = 'text-link-btn';
+    rename.textContent = '✏️';
+    rename.addEventListener('click', () => startRenameFolder(f, row));
+
+    const del = document.createElement('button');
+    del.className = 'text-link-btn';
+    del.style.color = 'var(--danger)';
+    del.textContent = '🗑';
+    del.addEventListener('click', () => deleteFolder(f));
+
+    row.appendChild(rename);
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+/** Перейменування прямо в рядку — без окремого вікна. */
+function startRenameFolder(folder, row) {
+  row.innerHTML = '';
+  const input = document.createElement('input');
+  input.className = 'input';
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  input.value = folder.name;
+  input.maxLength = 60;
+
+  const save = document.createElement('button');
+  save.className = 'btn btn-soft';
+  save.style.padding = '10px 14px';
+  save.textContent = 'OK';
+
+  save.addEventListener('click', async () => {
+    const name = input.value.trim();
+    if (!name) { toast('Назва не може бути порожньою.'); return; }
+    save.disabled = true;
+    try {
+      await callApi('rename_folder', { folder_id: folder.id, name });
+      await loadOverview();
+      renderFolderManageList();
+      renderFolderChips();
+      renderCardList();
+      toast('Перейменовано');
+    } catch (e) {
+      toast(errorText(e));
+      save.disabled = false;
+    }
+  });
+
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save.click(); });
+
+  row.appendChild(input);
+  row.appendChild(save);
+  input.focus();
+}
+
+async function deleteFolder(folder) {
+  const ok = await askConfirm(
+    'Видалити папку?',
+    folder.total > 0
+      ? `Папку «${folder.name}» буде видалено. ${cardsWord(folder.total)} з неї НЕ зникнуть — вони перейдуть у «Без папки».`
+      : `Папку «${folder.name}» буде видалено.`,
+    'Видалити папку',
+  );
+  if (!ok) return;
+
+  try {
+    await callApi('delete_folder', { folder_id: folder.id });
+    if (state.cardsScope === folder.id) state.cardsScope = 'all';
+    if (state.studyScope === folder.id) { state.studyScope = 'all'; state.studyScopeName = 'Усі картки'; }
+    await loadOverview();
+    renderFolderManageList();
+    renderFolderChips();
+    loadCards(true);
+    toast('Папку видалено');
+  } catch (e) {
+    toast(errorText(e));
+  }
+}
+
+el('btnCreateFolder').addEventListener('click', async () => {
+  const input = el('newFolderName');
+  const name = input.value.trim();
+  if (!name) { toast('Введи назву папки.'); return; }
+
+  const btn = el('btnCreateFolder');
+  btn.disabled = true;
+  try {
+    await callApi('create_folder', { name });
+    input.value = '';
+    await loadOverview();
+    renderFolderManageList();
+    renderFolderChips();
+    toast('Папку створено');
+  } catch (e) {
+    toast(errorText(e));
+  }
+  btn.disabled = false;
+});
+
+el('newFolderName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') el('btnCreateFolder').click();
+});
+
+// ==================== ВКЛАДКА "СТВОРИТИ" ====================
+
+// Список мов для режиму перекладу
+(function fillLanguages() {
+  const sel = el('createLangSelect');
+  LANGUAGES.forEach(([code, label]) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = 'Переклад на: ' + label;
+    sel.appendChild(opt);
+  });
+  sel.value = 'uk';
+})();
+
+const CREATE_HINTS = {
+  lookup: 'Введи англійське слово — знайду визначення, приклади, вимову й картинку (Cambridge Dictionary, потім запасні джерела). Перед збереженням усе можна виправити.',
+  translate: 'Введи слово будь-якою мовою — зроблю картку «англійське слово → переклад». Напрямок визначається автоматично.',
+  manual: 'Повністю ручна картка: пиши що завгодно на лицьовому й зворотному боці.',
+};
+
+function applyCreateMode() {
+  const mode = state.createMode;
+  document.querySelectorAll('#createModeSeg button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  el('createModeHint').textContent = CREATE_HINTS[mode];
+  el('createFetchBlock').classList.toggle('hidden', mode === 'manual');
+  el('createLangSelect').classList.toggle('hidden', mode !== 'translate');
+  el('btnFetch').textContent = mode === 'translate' ? 'Перекласти' : 'Знайти';
+  el('draftDefLabel').textContent = mode === 'translate' ? 'Переклад' : 'Визначення';
+
+  if (mode === 'manual') {
+    // Ручний режим - форма одразу порожня й готова до заповнення
+    showDraft({ word: '', definition: '', examples: [] }, 'manual', '');
+  } else {
+    hideDraft();
+  }
+}
+
+document.querySelectorAll('#createModeSeg button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.createMode = btn.dataset.mode;
+    el('createQuery').value = '';
+    applyCreateMode();
+  });
+});
+
+function showDraft(data, cardType, sourceNote) {
+  el('draftWord').value = data.word || '';
+  el('draftDefinition').value = data.definition || '';
+  el('draftExamples').value = (data.examples || []).join('\n');
+  el('draftSource').textContent = sourceNote || '';
+
+  const img = el('draftImg');
+  if (data.image_url) {
+    img.src = data.image_url;
+    img.classList.remove('hidden');
+  } else {
+    img.classList.add('hidden');
+  }
+
+  state.draftMeta = {
+    audio_url: data.audio_url || null,
+    image_url: data.image_url || null,
+    card_type: cardType,
+  };
+  fillFolderSelect(el('draftFolder'), el('draftFolder').value);
+  el('createDraft').classList.remove('hidden');
+}
+
+function hideDraft() {
+  el('createDraft').classList.add('hidden');
+  state.draftMeta = null;
+}
+
+const SOURCE_NOTES = {
+  cambridge: 'Cambridge Dictionary',
+  free_dictionary: 'Free Dictionary API',
+  ai: 'згенеровано AI',
+};
+
+el('btnFetch').addEventListener('click', async () => {
+  const query = el('createQuery').value.trim();
+  if (!query) { toast('Введи слово або фразу.'); return; }
+
+  const btn = el('btnFetch');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner sm"></span>';
+
+  try {
+    if (state.createMode === 'translate') {
+      const lang = el('createLangSelect').value;
+      const data = await callApi('translate_word', { text: query, target_language: lang });
+      showDraft(
+        { word: data.word, definition: data.translation, examples: [] },
+        'translation',
+        'Azure Translator',
+      );
+    } else {
+      const data = await callApi('lookup_word', { word: query });
+      showDraft(data, 'definition', SOURCE_NOTES[data.source] || '');
+    }
+    haptic('medium');
+  } catch (e) {
+    toast(errorText(e));
+  }
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+});
+
+el('createQuery').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); el('btnFetch').click(); }
+});
+
+el('btnDraftReset').addEventListener('click', () => {
+  el('createQuery').value = '';
+  if (state.createMode === 'manual') {
+    showDraft({ word: '', definition: '', examples: [] }, 'manual', '');
+  } else {
+    hideDraft();
+  }
+});
+
+el('btnDraftSave').addEventListener('click', async () => {
+  const word = el('draftWord').value.trim();
+  const definition = el('draftDefinition').value.trim();
+  if (!word) { toast('Слово не може бути порожнім.'); return; }
+  if (!definition) { toast('Заповни визначення або переклад.'); return; }
+
+  const btn = el('btnDraftSave');
+  btn.disabled = true;
+
+  try {
+    const folderValue = el('draftFolder').value;
+    await callApi('create_card', {
+      word,
+      definition,
+      examples: el('draftExamples').value.split('\n').map((s) => s.trim()).filter(Boolean),
+      folder_id: folderValue === 'none' ? null : folderValue,
+      card_type: state.draftMeta ? state.draftMeta.card_type : 'manual',
+      audio_url: state.draftMeta ? state.draftMeta.audio_url : null,
+      image_url: state.draftMeta ? state.draftMeta.image_url : null,
+    });
+
+    haptic('medium');
+    toast('Картку додано ✅');
+    el('createQuery').value = '';
+    if (state.createMode === 'manual') {
+      showDraft({ word: '', definition: '', examples: [] }, 'manual', '');
+      el('draftFolder').value = folderValue; // папку лишаємо обрану - зручно додавати підряд
+    } else {
+      hideDraft();
+    }
+    await loadOverview();
+  } catch (e) {
+    toast(errorText(e));
+  }
+
+  btn.disabled = false;
+});
+
+// ==================== СТАРТ ====================
+
+(async function init() {
+  showView('study');
+  el('studyScopeList').innerHTML = '<div class="state-screen"><div class="spinner"></div></div>';
+  const ok = await loadOverview();
+  if (ok) switchTab('study');
+})();
 </script>
 </body>
 </html>
