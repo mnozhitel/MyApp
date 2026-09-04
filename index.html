@@ -781,6 +781,79 @@
   }
   .mode-btn-advanced .mode-btn-title { color: var(--violet); }
 
+  .mode-btn-test {
+    border-color: rgba(255, 181, 71, 0.42);
+    box-shadow: var(--depth), 0 0 26px -14px rgba(255, 181, 71, 0.95);
+  }
+  .mode-btn-test .mode-btn-title { color: var(--amber); }
+
+  /* ---------------------------- прогрес (дашборд) ---------------------------- */
+
+  .progress-row {
+    width: 100%;
+    border: 1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(150, 185, 255, 0.075), rgba(150, 185, 255, 0.03));
+    border-radius: var(--radius-row);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .12s ease;
+  }
+  .progress-row:active { transform: scale(0.985); border-color: var(--stroke-2); }
+
+  .progress-ring {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .progress-ring::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(var(--ring-color, var(--cyan)) calc(var(--ring-pct, 0) * 1%), rgba(150, 185, 255, 0.14) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+  }
+  .progress-ring-num {
+    position: relative;
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .progress-chev { color: var(--muted-dim); font-size: 17px; flex-shrink: 0; }
+
+  .category-filter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 8px 8px 14px;
+    border-radius: 999px;
+    background: var(--glass-2);
+    border: 1px solid var(--stroke);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .category-filter button {
+    background: none;
+    border: none;
+    color: var(--cyan);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
   /* ---------------------------- екрани станів ---------------------------- */
 
   .state-screen {
@@ -976,7 +1049,10 @@
     <section id="viewStudy" class="hidden">
       <div class="section-head">
         <div class="section-title">Що вчимо?</div>
-        <div class="section-note" id="studyHint"></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="section-note" id="studyHint"></div>
+          <button class="btn btn-outline" id="btnGlobalProgress" style="padding:7px 12px; font-size:12px;">📊 Прогрес</button>
+        </div>
       </div>
       <div class="list" id="studyScopeList"></div>
     </section>
@@ -988,6 +1064,10 @@
         <button class="btn btn-outline" id="btnManageFolders" style="padding:12px 15px;">🗂</button>
       </div>
       <div class="chips" id="cardFolderChips"></div>
+      <div class="category-filter hidden" id="cardCategoryFilter">
+        <span id="cardCategoryFilterText"></span>
+        <button id="btnClearCategoryFilter">✕</button>
+      </div>
       <div class="section-head">
         <div class="section-title">Мої картки</div>
         <div class="section-note" id="cardsCount"></div>
@@ -1059,6 +1139,10 @@
           <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
             <span class="mode-btn-title">🧠 Просунутий</span>
             <span class="mode-btn-sub" id="modeAdvancedSub">Розумний алгоритм повторення (FSRS)</span>
+          </button>
+          <button class="mode-btn mode-btn-test" id="btnModeTest">
+            <span class="mode-btn-title">🧪 Тест</span>
+            <span class="mode-btn-sub" id="modeTestSub">Перевір усі картки набору одразу</span>
           </button>
         </div>
         <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
@@ -1190,6 +1274,22 @@
       <button class="btn btn-primary" id="btnCreateFolder" style="padding:12px 18px;">Додати</button>
     </div>
     <div class="list" id="folderManageList"></div>
+  </div>
+</div>
+
+<!-- ===================== Модальне вікно: прогрес ===================== -->
+<div class="scrim hidden" id="scrimProgress">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="progressSheetTitle">📊 Прогрес</div>
+      <button class="sheet-close" data-close="scrimProgress">✕</button>
+    </div>
+    <div class="hint">
+      «Знаю напам'ять» — позначена «Знаю» або досягла стабільного інтервалу повторення.
+      «Ще вчу» — вже торкався картки, але поки не закріпив. «Ще не вчив» — жодного разу не показував.
+    </div>
+    <div id="progressBody" class="list"></div>
+    <button class="btn btn-danger btn-block hidden" id="btnResetProgress">🔄 Скинути прогрес цього набору</button>
   </div>
 </div>
 
@@ -1350,8 +1450,12 @@ const state = {
 
   cardsScope: 'all',
   cardsSearch: '',
+  cardsCategory: null,
   cardsOffset: 0,
   cardsList: [],
+
+  progressScope: 'all',
+  progressScopeName: 'Усі картки',
 
   createMode: 'lookup',
   draftMeta: null,
@@ -1359,6 +1463,7 @@ const state = {
 };
 
 const CARDS_PAGE_SIZE = 50;
+const CATEGORY_LABELS = { not_studied: 'Ще не вчив', still_learning: 'Ще вчу', mastered: 'Знаю напам’ять' };
 
 // ==================== ЗВ'ЯЗОК З СЕРВЕРОМ ====================
 
@@ -1582,28 +1687,141 @@ function renderStudyScopes() {
   el('studyHint').textContent = `${cardsWord(state.totals.total)} всього`;
 
   const makeRow = (emoji, title, scope, counts) => {
-    const btn = document.createElement('button');
-    btn.className = 'row';
-    btn.innerHTML = `
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
       <span class="row-emoji">${emoji}</span>
       <span class="row-body">
         <span class="row-title">${escapeHtml(title)}</span>
         <span class="row-sub">${cardsWord(counts.total)} · ${counts.unknown} не вивчено</span>
       </span>
       <span class="pill${counts.due ? '' : ' quiet'}">${counts.due ? '🔁 ' + counts.due : '✓'}</span>`;
-    btn.addEventListener('click', () => {
+
+    const progressBtn = document.createElement('button');
+    progressBtn.className = 'text-link-btn';
+    progressBtn.style.padding = '4px 2px 4px 10px';
+    progressBtn.title = 'Прогрес';
+    progressBtn.textContent = '📊';
+    progressBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      haptic();
+      openProgress(scope, title);
+    });
+    row.appendChild(progressBtn);
+
+    row.addEventListener('click', () => {
       haptic();
       state.studyScope = scope;
       state.studyScopeName = title;
       openModeSelect();
     });
-    list.appendChild(btn);
+    list.appendChild(row);
   };
 
   makeRow('📚', 'Усі картки', 'all', state.totals);
   state.folders.forEach((f) => makeRow('🗂', f.name, f.id, f));
   if (state.noFolder.total > 0) makeRow('📄', 'Без папки', 'none', state.noFolder);
 }
+
+// ==================== ПРОГРЕС (дашборд) ====================
+
+async function openProgress(scope, scopeName) {
+  state.progressScope = scope;
+  state.progressScopeName = scopeName;
+  el('progressSheetTitle').textContent = `📊 Прогрес — ${scopeName}`;
+  el('progressBody').innerHTML = '<div class="state-screen"><div class="spinner"></div></div>';
+  el('btnResetProgress').classList.add('hidden');
+  openSheet('scrimProgress');
+
+  try {
+    const stats = await callApi('get_progress_stats', { folder: scope });
+    renderProgressStats(stats);
+  } catch (e) {
+    el('progressBody').innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">⚠️</div>
+        <div class="state-text">${escapeHtml(errorText(e))}</div>
+      </div>`;
+  }
+}
+
+function renderProgressStats(stats) {
+  const total = stats.total || 0;
+  const body = el('progressBody');
+  body.innerHTML = '';
+
+  if (total === 0) {
+    body.innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">🌱</div>
+        <div class="state-text">У цьому наборі ще немає карток.</div>
+      </div>`;
+    el('btnResetProgress').classList.add('hidden');
+    return;
+  }
+
+  const rows = [
+    { key: 'not_studied', title: 'Ще не вчив', color: 'var(--violet)', count: stats.not_studied },
+    { key: 'still_learning', title: 'Ще вчу', color: 'var(--amber)', count: stats.still_learning },
+    { key: 'mastered', title: 'Знаю напам’ять', color: 'var(--mint)', count: stats.mastered },
+  ];
+
+  rows.forEach((r) => {
+    const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
+    const btn = document.createElement('button');
+    btn.className = 'progress-row';
+    btn.innerHTML = `
+      <span class="progress-ring" style="--ring-pct:${pct}; --ring-color:${r.color};">
+        <span class="progress-ring-num">${r.count}</span>
+      </span>
+      <span class="row-body">
+        <span class="row-title">${r.title}</span>
+      </span>
+      <span class="progress-chev">›</span>`;
+    btn.addEventListener('click', () => { haptic(); openProgressCategory(r.key, r.title); });
+    body.appendChild(btn);
+  });
+
+  el('btnResetProgress').classList.remove('hidden');
+}
+
+function openProgressCategory(category, title) {
+  closeSheet('scrimProgress');
+  state.cardsScope = state.progressScope;
+  state.cardsCategory = category;
+  state.cardsSearch = '';
+  el('cardSearch').value = '';
+  switchTab('cards');
+  toast(`Показано: ${title}`);
+}
+
+el('btnGlobalProgress').addEventListener('click', () => {
+  haptic();
+  openProgress('all', 'Усі картки');
+});
+
+el('btnResetProgress').addEventListener('click', async () => {
+  const ok = await askConfirm(
+    'Скинути прогрес?',
+    `Прогрес вивчення для «${state.progressScopeName}» обнулиться: усі картки стануть новими. Текст карток залишиться. Цю дію не можна скасувати.`,
+    'Скинути',
+  );
+  if (!ok) return;
+
+  const btn = el('btnResetProgress');
+  btn.disabled = true;
+  try {
+    await callApi('reset_progress_bulk', { folder: state.progressScope });
+    toast('Прогрес скинуто');
+    await loadOverview();
+    if (state.tab === 'study') renderStudyScopes();
+    const stats = await callApi('get_progress_stats', { folder: state.progressScope });
+    renderProgressStats(stats);
+  } catch (e) {
+    toast(errorText(e));
+  }
+  btn.disabled = false;
+});
 
 // ==================== СЕСІЯ ВИВЧЕННЯ ====================
 
@@ -1621,12 +1839,14 @@ function showSessionScreen(name) {
   sessionScreens[name].classList.remove('hidden');
 }
 
-let currentMode = null; // 'simple' | 'advanced'
+let currentMode = null; // 'simple' | 'advanced' | 'test'
 let queue = [];
 let currentCard = null;
 let flipped = false;
 let reviewedCount = 0;
 let animating = false;  // поки картка перелітає - кліки ігноруємо
+let testKnownCount = 0; // лише для режиму 'test' - підсумковий рахунок
+let testTotalCount = 0;
 
 function scopeCounts() {
   if (state.studyScope === 'all') return state.totals;
@@ -1640,6 +1860,7 @@ function openModeSelect() {
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
   el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
+  el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів`;
   showView('session');
   showSessionScreen('modeSelect');
 }
@@ -1649,18 +1870,23 @@ async function startSession(mode) {
   reviewedCount = 0;
   currentCard = null;
   animating = false;
+  testKnownCount = 0;
+  testTotalCount = 0;
   showSessionScreen('loading');
   el('brandTitle').textContent = state.studyScopeName;
 
   try {
-    const action = mode === 'simple' ? 'get_unknown_cards' : 'get_due_cards';
+    const action = mode === 'simple' ? 'get_unknown_cards' : mode === 'test' ? 'get_all_cards' : 'get_due_cards';
     const data = await callApi(action, { folder: state.studyScope });
     queue = data.cards || [];
+    testTotalCount = queue.length;
 
     if (queue.length === 0) {
       el('stateEmptyText').textContent = mode === 'simple'
         ? 'Усі картки в цьому наборі вже позначені як «Знаю» 🎉'
-        : 'Немає карток, які треба повторити прямо зараз. Повертайся пізніше.';
+        : mode === 'test'
+          ? 'У цьому наборі ще немає карток для тесту.'
+          : 'Немає карток, які треба повторити прямо зараз. Повертайся пізніше.';
       showSessionScreen('empty');
       updateProgress();
       return;
@@ -1711,12 +1937,18 @@ function nextCard() {
 
   if (queue.length === 0) {
     currentCard = null;
-    el('stateDoneText').textContent =
-      currentMode === 'simple'
-        ? `Усі картки вивчено! Позначено «Знаю»: ${reviewedCount}. 🎉`
-        : reviewedCount > 0
-          ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
-          : "Повертайся пізніше.";
+    if (currentMode === 'test') {
+      const pct = testTotalCount > 0 ? Math.round((testKnownCount / testTotalCount) * 100) : 0;
+      const verdict = pct >= 80 ? 'Відмінно! 🎉' : pct >= 50 ? 'Непогано, є куди рости.' : 'Варто повторити цей набір ще раз.';
+      el('stateDoneText').textContent = `Результат тесту: ${testKnownCount} / ${testTotalCount} (${pct}%). ${verdict}`;
+    } else {
+      el('stateDoneText').textContent =
+        currentMode === 'simple'
+          ? `Усі картки вивчено! Позначено «Знаю»: ${reviewedCount}. 🎉`
+          : reviewedCount > 0
+            ? `Переглянуто карток: ${reviewedCount}. Гарна робота!`
+            : "Повертайся пізніше.";
+    }
     showSessionScreen('done');
     updateProgress();
     loadOverview(); // оновлюємо лічильники на вкладці "Вчити"
@@ -1807,7 +2039,7 @@ function renderCard(card) {
   // створена вручну в застосунку) - озвучуємо голосом самого пристрою
   el('playBtn').classList.remove('hidden');
 
-  if (currentMode === 'simple') {
+  if (currentMode === 'simple' || currentMode === 'test') {
     el('rateRow').classList.add('hidden');
     el('simpleRateRow').classList.remove('hidden');
   } else {
@@ -1912,7 +2144,12 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
 
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
 
-    if (known) {
+    if (currentMode === 'test') {
+      // Тест іде по колу лише ОДИН раз - не повертаємо "не знаю" назад
+      // у чергу, а рахуємо підсумковий результат.
+      if (known) testKnownCount += 1;
+      reviewedCount += 1;
+    } else if (known) {
       reviewedCount += 1;
     } else {
       // "Не знаю" - показуємо картку знову трохи пізніше в цій же сесії
@@ -1925,12 +2162,15 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
 
 el('btnModeSimple').addEventListener('click', () => startSession('simple'));
 el('btnModeAdvanced').addEventListener('click', () => startSession('advanced'));
+el('btnModeTest').addEventListener('click', () => startSession('test'));
 
 async function quitSession() {
   queue = [];
   currentCard = null;
   reviewedCount = 0;
   currentMode = null;
+  testKnownCount = 0;
+  testTotalCount = 0;
   animating = false;
   await loadOverview();
   switchTab('study');
@@ -1954,6 +2194,8 @@ function renderFolderChips() {
     btn.textContent = label;
     btn.addEventListener('click', () => {
       state.cardsScope = scope;
+      state.cardsCategory = null;
+      updateCategoryFilterUi();
       renderFolderChips();
       loadCards(true);
     });
@@ -1965,17 +2207,35 @@ function renderFolderChips() {
   if (state.noFolder.total > 0) addChip('Без папки', 'none');
 }
 
+function updateCategoryFilterUi() {
+  const wrap = el('cardCategoryFilter');
+  if (state.cardsCategory) {
+    wrap.classList.remove('hidden');
+    el('cardCategoryFilterText').textContent = `Фільтр: ${CATEGORY_LABELS[state.cardsCategory] || state.cardsCategory}`;
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+el('btnClearCategoryFilter').addEventListener('click', () => {
+  state.cardsCategory = null;
+  updateCategoryFilterUi();
+  loadCards(true);
+});
+
 async function loadCards(reset) {
   if (reset) {
     state.cardsOffset = 0;
     state.cardsList = [];
     el('cardList').innerHTML = '<div class="state-screen"><div class="spinner"></div></div>';
   }
+  updateCategoryFilterUi();
 
   try {
     const data = await callApi('list_cards', {
       folder: state.cardsScope,
       search: state.cardsSearch,
+      category: state.cardsCategory || undefined,
       limit: CARDS_PAGE_SIZE,
       offset: state.cardsOffset,
     });
@@ -2008,23 +2268,60 @@ function renderCardList() {
 
   state.cardsList.forEach((card) => {
     const folder = state.folders.find((f) => f.id === card.folder_id);
-    const btn = document.createElement('button');
-    btn.className = 'row';
-    btn.innerHTML = `
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
       <span class="row-emoji">${TYPE_ICON[card.card_type] || '📖'}</span>
       <span class="row-body">
         <span class="row-title serif">${escapeHtml(card.word)}</span>
         <span class="row-sub">${escapeHtml(card.definition)}</span>
       </span>
       ${folder ? `<span class="pill quiet">${escapeHtml(folder.name)}</span>` : ''}`;
-    btn.addEventListener('click', () => openEditor(card));
-    list.appendChild(btn);
+
+    // Швидке видалення прямо зі списку (як у Quizlet "Edit set") -
+    // окремою кнопкою, без відкриття повного редактора.
+    const del = document.createElement('button');
+    del.className = 'text-link-btn';
+    del.style.color = 'var(--pink)';
+    del.style.padding = '4px 4px 4px 8px';
+    del.title = 'Видалити';
+    del.textContent = '🗑';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickDeleteCard(card);
+    });
+    row.appendChild(del);
+
+    row.addEventListener('click', () => openEditor(card));
+    list.appendChild(row);
   });
+}
+
+async function quickDeleteCard(card) {
+  haptic();
+  const ok = await askConfirm(
+    'Видалити картку?',
+    `«${card.word}» буде видалено назавжди. Цю дію не можна скасувати.`,
+    'Видалити',
+  );
+  if (!ok) return;
+
+  try {
+    await callApi('delete_card', { card_id: card.id });
+    state.cardsList = state.cardsList.filter((c) => c.id !== card.id);
+    renderCardList();
+    loadOverview();
+    toast('Картку видалено');
+  } catch (e) {
+    toast(errorText(e));
+  }
 }
 
 let searchTimer = null;
 el('cardSearch').addEventListener('input', (e) => {
   state.cardsSearch = e.target.value.trim();
+  state.cardsCategory = null;
+  updateCategoryFilterUi();
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => loadCards(true), 320);
 });
