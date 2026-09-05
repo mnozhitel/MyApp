@@ -707,6 +707,34 @@
   .btn-mini:disabled { opacity: 0.45; }
   .btn-mini-danger { color: var(--pink); border-color: rgba(255, 95, 150, 0.3); }
 
+  /* -------- панель "Додати фото" -------- */
+  .photo-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--stroke);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .photo-panel .input { font-size: 13px; padding: 10px 12px; }
+  .photo-file {
+    font-size: 12px;
+    color: var(--muted-dim);
+  }
+  .photo-file::file-selector-button {
+    padding: 7px 12px;
+    margin-right: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--stroke);
+    background: var(--glass);
+    color: var(--muted);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
   /* -------- перемикач значень слова -------- */
   .sense-bar {
     display: flex;
@@ -1205,9 +1233,7 @@
         <div class="photo-bar" id="draftPhotoBar">
           <div class="photo-note" id="draftPhotoNote"></div>
           <div class="photo-actions">
-            <button class="btn-mini hidden" id="btnDraftPhotoPrev">‹</button>
-            <button class="btn-mini hidden" id="btnDraftPhotoNext">Інше фото ›</button>
-            <button class="btn-mini hidden" id="btnDraftPhotoFind">🖼 Знайти фото</button>
+            <button class="btn-mini" id="btnDraftPhotoFind">➕ Додати фото</button>
             <button class="btn-mini btn-mini-danger hidden" id="btnDraftPhotoRemove">Без фото</button>
           </div>
         </div>
@@ -1350,9 +1376,7 @@
     <div class="photo-bar" id="editPhotoBar">
       <div class="photo-note" id="editPhotoNote"></div>
       <div class="photo-actions">
-        <button class="btn-mini hidden" id="btnEditPhotoPrev">‹</button>
-        <button class="btn-mini hidden" id="btnEditPhotoNext">Інше фото ›</button>
-        <button class="btn-mini" id="btnEditPhotoFind">🖼 Знайти фото</button>
+        <button class="btn-mini" id="btnEditPhotoFind">➕ Додати фото</button>
         <button class="btn-mini btn-mini-danger hidden" id="btnEditPhotoRemove">Без фото</button>
       </div>
     </div>
@@ -2794,40 +2818,32 @@ document.querySelectorAll('#createModeSeg button').forEach((btn) => {
  */
 const photoPickers = {};
 
-const PHOTO_SOURCE_LABELS = {
-  cambridge: 'ілюстрація зі словника Cambridge',
-  wikidata: 'Wikidata — фото прикріплене до поняття редакторами',
-  wikipedia: 'головне зображення статті Wikipedia',
-  manual: 'обрано вручну',
-};
-
-const PHOTO_REASONS = {
-  abstract_word: 'Це абстрактне поняття — картинка радше заплутає, ніж допоможе.',
-  part_of_speech: 'Службові слова наочно не покажеш.',
-  phrasal_verb: 'Фразове дієслово важко однозначно проілюструвати.',
-  too_many_words: 'Задовгий вираз для однієї ілюстрації.',
-  not_found: 'Не знайшов жодного фото, у якому можна бути впевненим.',
-  lookup_failed: 'Не вдалося звʼязатися з джерелами зображень.',
-};
-
 function createPhotoPicker(key, ids) {
   const picker = {
-    candidates: [],
-    index: 0,
-    removed: false,
-    word: '',
-    reason: '',
-    ids,
+    candidates: [], index: 0, removed: false,
+    word: '', reason: '', panelOpen: false, ids,
   };
   photoPickers[key] = picker;
   return picker;
 }
 
 function photoCurrentUrl(picker) {
-  if (picker.removed) return null;
+  if (!picker || picker.removed) return null;
   const c = picker.candidates[picker.index];
   return c ? c.url : null;
 }
+
+const PHOTO_SOURCE_LABELS = {
+  cambridge: '✅ ілюстрація зі словника Cambridge — саме до цього значення',
+  own: '🖼 твоє фото',
+};
+
+const PHOTO_REASONS = {
+  no_dictionary_image: 'У словнику немає ілюстрації до цього слова. Автоматично '
+    + 'ставлю лише словникові картинки — інші джерела знають слово, але не його '
+    + 'значення.',
+  manual_only: 'Обери фото сам — і встав посиланням або файлом.',
+};
 
 function renderPhotoPicker(key) {
   const p = photoPickers[key];
@@ -2843,44 +2859,155 @@ function renderPhotoPicker(key) {
     img.classList.add('hidden');
   }
 
-  const many = !p.removed && p.candidates.length > 1;
-  el(p.ids.prev).classList.toggle('hidden', !many);
-  el(p.ids.next).classList.toggle('hidden', !many);
   el(p.ids.remove).classList.toggle('hidden', !url);
-  // "Знайти фото" лишається доступним і тоді, коли фото вже є, але
-  // перебирати нічого: користувач має могти замінити його вручну
-  el(p.ids.find).classList.toggle('hidden', many);
+  el(p.ids.find).classList.remove('hidden');
+  el(p.ids.find).textContent = url ? '🖼 Своє фото' : '➕ Додати фото';
 
   const note = el(p.ids.note);
   note.innerHTML = '';
   if (url) {
     const c = p.candidates[p.index];
-    const src = PHOTO_SOURCE_LABELS[c.source] || c.source;
-    const which = many ? ` · ${p.index + 1} з ${p.candidates.length}` : '';
-    note.textContent = `${c.note || c.label || ''} ${c.note ? '· ' : ''}${src}${which}`.trim();
+    note.textContent = PHOTO_SOURCE_LABELS[c ? c.source : 'own'] || '';
   } else if (p.removed) {
     note.textContent = 'Картка буде без ілюстрації.';
   } else {
     note.textContent = PHOTO_REASONS[p.reason] || 'Ілюстрації немає.';
-    // Не знайшли самі - показуємо, де людина може підібрати фото вручну
-    if (p.manualSources && p.manualSources.length) {
-      const wrap = document.createElement('div');
-      wrap.style.marginTop = '6px';
-      wrap.appendChild(document.createTextNode('Підібрати самому: '));
-      p.manualSources.forEach((s, i) => {
-        if (i) wrap.appendChild(document.createTextNode(' · '));
-        const a = document.createElement('a');
-        a.href = s.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = s.name;
-        a.style.color = 'var(--cyan)';
-        wrap.appendChild(a);
-      });
-      note.appendChild(wrap);
-    }
+  }
+  if (p.panelOpen) note.appendChild(buildPhotoPanel(key));
+}
+
+/**
+ * Панель "Додати фото": посилання на Google Картинки, поле для лінка й
+ * вибір файлу. Автоматично більше нічого не шукається - фото обирає
+ * людина, бо лише вона знає потрібне значення слова.
+ */
+function buildPhotoPanel(key) {
+  const p = photoPickers[key];
+  const wrap = document.createElement('div');
+  wrap.className = 'photo-panel';
+
+  const step1 = document.createElement('div');
+  step1.appendChild(document.createTextNode('1. '));
+  const a = document.createElement('a');
+  a.href = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(p.word || '');
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = 'Відкрити Google Картинки';
+  a.style.color = 'var(--cyan)';
+  step1.appendChild(a);
+  step1.appendChild(document.createTextNode(' і вибери потрібне.'));
+  wrap.appendChild(step1);
+
+  const step2 = document.createElement('div');
+  step2.textContent = '2. Встав посилання на нього або завантаж файл:';
+  wrap.appendChild(step2);
+
+  const row = document.createElement('div');
+  row.className = 'row-inline';
+  const input = document.createElement('input');
+  input.className = 'input';
+  input.type = 'url';
+  input.placeholder = 'https://…';
+  input.autocomplete = 'off';
+  const ok = document.createElement('button');
+  ok.className = 'btn btn-soft';
+  ok.style.padding = '10px 14px';
+  ok.textContent = 'OK';
+  ok.addEventListener('click', () => applyPhotoUrl(key, input.value, ok));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); applyPhotoUrl(key, input.value, ok); }
+  });
+  row.appendChild(input);
+  row.appendChild(ok);
+  wrap.appendChild(row);
+
+  const file = document.createElement('input');
+  file.type = 'file';
+  file.accept = 'image/*';
+  file.className = 'photo-file';
+  file.addEventListener('change', () => applyPhotoFile(key, file));
+  wrap.appendChild(file);
+
+  return wrap;
+}
+
+/** Фото за посиланням: файл перекладається у сховище, щоб не зникнув. */
+async function applyPhotoUrl(key, value, btn) {
+  const p = photoPickers[key];
+  const url = (value || '').trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) { toast('Встав посилання, що починається з http.'); return; }
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = '…';
+  try {
+    const res = await callApi('upload_image', { word: p.word, source_url: url });
+    setOwnPhoto(key, res.image_url);
+    toast('Фото додано ✅');
+  } catch (e) {
+    toast('За цим посиланням картинки немає. Потрібне пряме посилання на зображення.');
+  }
+  btn.disabled = false;
+  btn.textContent = old;
+}
+
+/** Фото файлом з телефона. */
+async function applyPhotoFile(key, input) {
+  const p = photoPickers[key];
+  const f = input.files && input.files[0];
+  if (!f) return;
+  if (f.size > 8 * 1024 * 1024) { toast('Файл завеликий — до 8 МБ.'); return; }
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(f);
+    });
+    const res = await callApi('upload_image', {
+      word: p.word, data_base64: base64, content_type: f.type || 'image/jpeg',
+    });
+    setOwnPhoto(key, res.image_url);
+    toast('Фото додано ✅');
+  } catch (e) {
+    toast('Не вдалося завантажити файл.');
   }
 }
+
+function setOwnPhoto(key, url) {
+  const p = photoPickers[key];
+  if (!url) return;
+  p.candidates = [{ url, source: 'own', label: p.word, note: '' }];
+  p.index = 0;
+  p.removed = false;
+  p.panelOpen = false;
+  renderPhotoPicker(key);
+}
+
+function wirePhotoPicker(key, ids) {
+  createPhotoPicker(key, ids);
+  el(ids.remove).addEventListener('click', () => {
+    const p = photoPickers[key];
+    p.removed = true;
+    p.panelOpen = false;
+    renderPhotoPicker(key);
+    haptic();
+  });
+  el(ids.find).addEventListener('click', () => {
+    const p = photoPickers[key];
+    p.panelOpen = !p.panelOpen;
+    renderPhotoPicker(key);
+    haptic();
+  });
+}
+
+wirePhotoPicker('draft', {
+  img: 'draftImg', note: 'draftPhotoNote',
+  remove: 'btnDraftPhotoRemove', find: 'btnDraftPhotoFind',
+});
+wirePhotoPicker('edit', {
+  img: 'editImg', note: 'editPhotoNote',
+  remove: 'btnEditPhotoRemove', find: 'btnEditPhotoFind',
+});
 
 function setPhotoCandidates(key, word, candidates, currentUrl, reason) {
   const p = photoPickers[key];
@@ -2893,75 +3020,17 @@ function setPhotoCandidates(key, word, candidates, currentUrl, reason) {
   // Картка, що вже має фото, але без списку варіантів (стара картка з
   // бази) - показуємо наявне як єдиний варіант
   if (currentUrl && !p.candidates.some((c) => c.url === currentUrl)) {
-    p.candidates.unshift({ url: currentUrl, source: 'manual', label: word || '', note: '' });
+    p.candidates.unshift({
+      url: currentUrl,
+      // Словникову картинку відрізняємо від доданої вручну: у першої
+      // reason === 'ok', бо вона прийшла зі значення
+      source: reason === 'ok' ? 'cambridge' : 'own',
+      label: word || '', note: '',
+    });
   }
   p.index = currentUrl ? Math.max(0, p.candidates.findIndex((c) => c.url === currentUrl)) : 0;
   renderPhotoPicker(key);
 }
-
-async function findPhotoFor(key) {
-  const p = photoPickers[key];
-  if (!p || !p.word) { toast('Спершу впиши слово.'); return; }
-  const btn = el(p.ids.find);
-  btn.disabled = true;
-  const old = btn.textContent;
-  btn.textContent = 'Шукаю…';
-  try {
-    // Ручний пошук - користувач наполягає, тож показуємо все, що знайшли
-    const res = await callApi('find_image', { word: p.word });
-    if (!res.candidates || res.candidates.length === 0) {
-      // Чесно кажемо, що не знайшли, і одразу даємо, де взяти вручну
-      p.reason = res.reason || 'not_found';
-      p.manualSources = res.manual_sources || [];
-      renderPhotoPicker(key);
-      return;
-    }
-    p.candidates = res.candidates;
-    p.manualSources = [];
-    p.index = 0;
-    p.removed = false;
-    renderPhotoPicker(key);
-  } catch (e) {
-    toast('Не вдалося пошукати фото.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = old;
-  }
-}
-
-function wirePhotoPicker(key, ids) {
-  createPhotoPicker(key, ids);
-  el(ids.next).addEventListener('click', () => {
-    const p = photoPickers[key];
-    if (!p.candidates.length) return;
-    p.index = (p.index + 1) % p.candidates.length;
-    renderPhotoPicker(key);
-    haptic();
-  });
-  el(ids.prev).addEventListener('click', () => {
-    const p = photoPickers[key];
-    if (!p.candidates.length) return;
-    p.index = (p.index - 1 + p.candidates.length) % p.candidates.length;
-    renderPhotoPicker(key);
-    haptic();
-  });
-  el(ids.remove).addEventListener('click', () => {
-    const p = photoPickers[key];
-    p.removed = true;
-    renderPhotoPicker(key);
-    haptic();
-  });
-  el(ids.find).addEventListener('click', () => findPhotoFor(key));
-}
-
-wirePhotoPicker('draft', {
-  img: 'draftImg', note: 'draftPhotoNote', prev: 'btnDraftPhotoPrev',
-  next: 'btnDraftPhotoNext', remove: 'btnDraftPhotoRemove', find: 'btnDraftPhotoFind',
-});
-wirePhotoPicker('edit', {
-  img: 'editImg', note: 'editPhotoNote', prev: 'btnEditPhotoPrev',
-  next: 'btnEditPhotoNext', remove: 'btnEditPhotoRemove', find: 'btnEditPhotoFind',
-});
 
 /**
  * Значення слова. Спершу показуємо лише найуживаніше (перше в статті
@@ -3023,6 +3092,18 @@ function applySense(index) {
   const s = list[senseState.index];
   el('draftDefinition').value = s.definition || '';
   el('draftExamples').value = (s.examples || []).join('\n');
+
+  // Ілюстрація належить ЗНАЧЕННЮ, а не слову: у Cambridge вона лежить
+  // усередині блока значення. Тому при перемиканні картинка або
+  // міняється на свою, або зникає - фото від іншого значення лишати не
+  // можна. Виняток - фото, яке користувач додав сам: воно його вибір.
+  const picker = photoPickers.draft;
+  const current = picker && picker.candidates[picker.index];
+  if (!current || current.source !== 'own') {
+    setPhotoCandidates('draft', el('draftWord').value, [], s.image_url || null,
+      s.image_url ? 'ok' : 'no_dictionary_image');
+  }
+
   renderSenseBar();
   haptic();
 }
