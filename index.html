@@ -2783,6 +2783,7 @@ function renderPhotoPicker(key) {
   el(p.ids.find).classList.toggle('hidden', many);
 
   const note = el(p.ids.note);
+  note.innerHTML = '';
   if (url) {
     const c = p.candidates[p.index];
     const src = PHOTO_SOURCE_LABELS[c.source] || c.source;
@@ -2792,6 +2793,23 @@ function renderPhotoPicker(key) {
     note.textContent = 'Картка буде без ілюстрації.';
   } else {
     note.textContent = PHOTO_REASONS[p.reason] || 'Ілюстрації немає.';
+    // Не знайшли самі - показуємо, де людина може підібрати фото вручну
+    if (p.manualSources && p.manualSources.length) {
+      const wrap = document.createElement('div');
+      wrap.style.marginTop = '6px';
+      wrap.appendChild(document.createTextNode('Підібрати самому: '));
+      p.manualSources.forEach((s, i) => {
+        if (i) wrap.appendChild(document.createTextNode(' · '));
+        const a = document.createElement('a');
+        a.href = s.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = s.name;
+        a.style.color = 'var(--cyan)';
+        wrap.appendChild(a);
+      });
+      note.appendChild(wrap);
+    }
   }
 }
 
@@ -2823,12 +2841,14 @@ async function findPhotoFor(key) {
     // Ручний пошук - користувач наполягає, тож показуємо все, що знайшли
     const res = await callApi('find_image', { word: p.word });
     if (!res.candidates || res.candidates.length === 0) {
+      // Чесно кажемо, що не знайшли, і одразу даємо, де взяти вручну
       p.reason = res.reason || 'not_found';
+      p.manualSources = res.manual_sources || [];
       renderPhotoPicker(key);
-      toast('Не знайшов фото, у якому можна бути впевненим.');
       return;
     }
     p.candidates = res.candidates;
+    p.manualSources = [];
     p.index = 0;
     p.removed = false;
     renderPhotoPicker(key);
