@@ -707,6 +707,62 @@
   .btn-mini:disabled { opacity: 0.45; }
   .btn-mini-danger { color: var(--pink); border-color: rgba(255, 95, 150, 0.3); }
 
+  /* -------- перемикач значень слова -------- */
+  .sense-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius-row);
+    background: var(--glass);
+  }
+  .sense-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .sense-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.02em;
+    min-width: 0;
+  }
+  .sense-nav { display: flex; gap: 6px; flex-shrink: 0; }
+  .sense-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+    border-top: 1px solid var(--stroke);
+    padding-top: 8px;
+  }
+  .sense-item {
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+  .sense-item:hover { background: var(--glass-2); }
+  .sense-item.active { border-color: var(--stroke-2); background: var(--glass-2); }
+  .sense-item b { color: var(--cyan); font-size: 11px; letter-spacing: 0.04em; }
+  .sense-pos {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted-dim);
+    margin-top: 6px;
+  }
+
   /* -------- поява / зникання картки при переході до наступної -------- */
 
   .card-stage.leaving {
@@ -1131,6 +1187,19 @@
         <div class="section-head">
           <div class="section-title">Картка</div>
           <div class="section-note" id="draftSource"></div>
+        </div>
+
+        <!-- Перемикач значень: спершу показуємо найуживаніше -->
+        <div class="sense-bar hidden" id="senseBar">
+          <div class="sense-head">
+            <div class="sense-title" id="senseTitle"></div>
+            <div class="sense-nav">
+              <button class="btn-mini" id="btnSensePrev">‹</button>
+              <button class="btn-mini" id="btnSenseNext">Інше значення ›</button>
+            </div>
+          </div>
+          <button class="btn-mini" id="btnSenseAll" style="align-self:flex-start;">📋 Усі значення</button>
+          <div class="sense-list hidden" id="senseList"></div>
         </div>
         <img class="card-img hidden" id="draftImg" alt="">
         <div class="photo-bar" id="draftPhotoBar">
@@ -2894,11 +2963,91 @@ wirePhotoPicker('edit', {
   next: 'btnEditPhotoNext', remove: 'btnEditPhotoRemove', find: 'btnEditPhotoFind',
 });
 
+/**
+ * Значення слова. Спершу показуємо лише найуживаніше (перше в статті
+ * словника), інші - на вимогу: у 90% випадків потрібне саме перше, а
+ * список із двадцяти значень одразу лише заважає.
+ */
+const senseState = { senses: [], index: 0 };
+
+function renderSenseBar() {
+  const bar = el('senseBar');
+  const list = senseState.senses;
+  bar.classList.toggle('hidden', list.length < 2);
+  if (list.length < 2) return;
+
+  const s = list[senseState.index];
+  const bits = [];
+  if (s.guide_word) bits.push(s.guide_word);
+  if (s.part_of_speech) bits.push(s.part_of_speech);
+  if (s.level) bits.push(s.level);
+  bits.push(`значення ${senseState.index + 1} з ${list.length}`);
+  el('senseTitle').textContent = bits.join(' · ');
+  renderSenseList();
+}
+
+function renderSenseList() {
+  const box = el('senseList');
+  if (box.classList.contains('hidden')) return;
+  box.innerHTML = '';
+
+  let lastPos = null;
+  senseState.senses.forEach((s, i) => {
+    const pos = s.part_of_speech || 'інше';
+    if (pos !== lastPos) {
+      const head = document.createElement('div');
+      head.className = 'sense-pos';
+      head.textContent = pos;
+      box.appendChild(head);
+      lastPos = pos;
+    }
+    const btn = document.createElement('button');
+    btn.className = 'sense-item' + (i === senseState.index ? ' active' : '');
+    if (s.guide_word) {
+      const b = document.createElement('b');
+      b.textContent = s.guide_word + (s.level ? ` · ${s.level}` : '');
+      btn.appendChild(b);
+      btn.appendChild(document.createElement('br'));
+    }
+    btn.appendChild(document.createTextNode(`${i + 1}. ${s.definition}`));
+    btn.addEventListener('click', () => applySense(i));
+    box.appendChild(btn);
+  });
+}
+
+/** Обране значення підставляється у форму - саме воно й збережеться. */
+function applySense(index) {
+  const list = senseState.senses;
+  if (!list.length) return;
+  senseState.index = (index + list.length) % list.length;
+  const s = list[senseState.index];
+  el('draftDefinition').value = s.definition || '';
+  el('draftExamples').value = (s.examples || []).join('\n');
+  renderSenseBar();
+  haptic();
+}
+
+el('btnSenseNext').addEventListener('click', () => applySense(senseState.index + 1));
+el('btnSensePrev').addEventListener('click', () => applySense(senseState.index - 1));
+el('btnSenseAll').addEventListener('click', () => {
+  const box = el('senseList');
+  const opening = box.classList.contains('hidden');
+  box.classList.toggle('hidden', !opening);
+  el('btnSenseAll').textContent = opening ? '▲ Згорнути список' : '📋 Усі значення';
+  if (opening) renderSenseList();
+});
+
 function showDraft(data, cardType, sourceNote) {
   el('draftWord').value = data.word || '';
   el('draftDefinition').value = data.definition || '';
   el('draftExamples').value = (data.examples || []).join('\n');
   el('draftSource').textContent = sourceNote || '';
+
+  senseState.senses = Array.isArray(data.senses) ? data.senses : [];
+  senseState.index = 0;
+  el('senseList').classList.add('hidden');
+  el('btnSenseAll').textContent = '📋 Усі значення';
+  renderSenseBar();
 
   setPhotoCandidates('draft', data.word, data.image_candidates, data.image_url, data.image_reason);
 
