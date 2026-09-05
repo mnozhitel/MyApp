@@ -1848,6 +1848,51 @@ let animating = false;  // поки картка перелітає - кліки
 let testKnownCount = 0; // лише для режиму 'test' - підсумковий рахунок
 let testTotalCount = 0;
 
+/**
+ * "Простий" режим більше не показує картки по колу - у нього своя чергова
+ * логіка, схожа на те, як влаштований Quizlet Learn: картка, яку щойно
+ * пропустили або не знали, повертається швидко, а "вивченою" в межах цієї
+ * сесії вважається лише після кількох ПОСПІЛЬ правильних відповідей
+ * (streak), а не з першого разу. Все це - тимчасовий стан лише в межах
+ * поточної сесії (поля _streak/_dueInShows), на бекенд іде тільки фінальний
+ * результат.
+ */
+const SIMPLE_MASTERY_STREAK = 2; // скільки влучань поспіль треба, щоб картка "вивчилась"
+
+/** Скільки карток має пройти, перш ніж ця картка знову стане "доступною". */
+function simpleCooldown(kind, otherCardsInQueue) {
+  const base = kind === 'wrong' ? 2 : 3; // неправильну відповідь повертаємо швидше
+  return Math.max(1, Math.min(base, otherCardsInQueue || 1));
+}
+
+/**
+ * Обирає індекс наступної картки в "Простому" режимі: серед карток, чий
+ * "кулдаун" уже минув, першою йде та, що має найнижчий streak (тобто
+ * найслабше засвоєна) - так само, як Quizlet показує першою картку з
+ * найнижчою ймовірністю пригадування, а не просто наступну по черзі.
+ */
+function pickSimpleIndex() {
+  let bestIdx = -1;
+  let bestKey = null;
+  for (let i = 0; i < queue.length; i++) {
+    const c = queue[i];
+    if ((c._dueInShows || 0) > 0) continue;
+    const key = c._streak || 0;
+    if (bestKey === null || key < bestKey) {
+      bestKey = key;
+      bestIdx = i;
+    }
+  }
+  if (bestIdx !== -1) return bestIdx;
+  // Жодна картка ще не "дозріла" - беремо ту, якій лишилось чекати найменше
+  let minDue = Infinity;
+  for (let i = 0; i < queue.length; i++) {
+    const due = queue[i]._dueInShows || 0;
+    if (due < minDue) { minDue = due; bestIdx = i; }
+  }
+  return bestIdx;
+}
+
 function scopeCounts() {
   if (state.studyScope === 'all') return state.totals;
   if (state.studyScope === 'none') return state.noFolder;
@@ -1858,7 +1903,7 @@ function openModeSelect() {
   const counts = scopeCounts();
   el('modeSelectTitle').textContent = state.studyScopeName;
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
-  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено`;
+  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · картка "вивчена" після 2 влучань поспіль`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
   el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів`;
   showView('session');
@@ -1878,7 +1923,8 @@ async function startSession(mode) {
   try {
     const action = mode === 'simple' ? 'get_unknown_cards' : mode === 'test' ? 'get_all_cards' : 'get_due_cards';
     const data = await callApi(action, { folder: state.studyScope });
-    queue = data.cards || [];
+    // _streak/_dueInShows - службові поля для чергової логіки "Простого" режиму
+    queue = (data.cards || []).map((c) => ({ ...c, _streak: 0, _dueInShows: 0 }));
     testTotalCount = queue.length;
 
     if (queue.length === 0) {
@@ -1935,6 +1981,11 @@ function hideRateRows() {
 function nextCard() {
   hideRateRows();
 
+  if (currentMode === 'simple') {
+    // "Тік" сесії - наближає момент, коли картки з кулдауном знову стануть доступні
+    queue.forEach((c) => { if (c._dueInShows > 0) c._dueInShows -= 1; });
+  }
+
   if (queue.length === 0) {
     currentCard = null;
     if (currentMode === 'test') {
@@ -1955,7 +2006,7 @@ function nextCard() {
     return;
   }
 
-  const upcoming = queue.shift();
+  const upcoming = currentMode === 'simple' ? queue.splice(pickSimpleIndex(), 1)[0] : queue.shift();
   const hadPrevious = currentCard !== null;
   currentCard = upcoming;
 
@@ -2138,24 +2189,41 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
     const known = btn.dataset.simple === 'know';
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = true));
 
-    try {
-      await callApi("mark_known", { card_id: currentCard.id, known });
-    } catch (err) { /* тихо ігноруємо */ }
-
-    document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
-
     if (currentMode === 'test') {
       // Тест іде по колу лише ОДИН раз - не повертаємо "не знаю" назад
-      // у чергу, а рахуємо підсумковий результат.
+      // у чергу, а рахуємо підсумковий результат. Кожна відповідь одразу
+      // йде на бекенд.
+      try {
+        await callApi("mark_known", { card_id: currentCard.id, known });
+      } catch (err) { /* тихо ігноруємо */ }
       if (known) testKnownCount += 1;
       reviewedCount += 1;
-    } else if (known) {
-      reviewedCount += 1;
-    } else {
-      // "Не знаю" - показуємо картку знову трохи пізніше в цій же сесії
-      const insertAt = Math.min(queue.length, 3);
-      queue.splice(insertAt, 0, currentCard);
+    } else if (currentMode === 'simple') {
+      // Розумна черга: картка вважається "вивченою" лише після
+      // SIMPLE_MASTERY_STREAK влучань ПОСПІЛЬ. Хибна відповідь одразу
+      // скидає лічильник і повертає картку в чергу швидше, ніж коректна.
+      if (known) {
+        currentCard._streak = (currentCard._streak || 0) + 1;
+        if (currentCard._streak >= SIMPLE_MASTERY_STREAK) {
+          try {
+            await callApi("mark_known", { card_id: currentCard.id, known: true });
+          } catch (err) { /* тихо ігноруємо */ }
+          reviewedCount += 1; // картка справді вивчена в цій сесії
+        } else {
+          currentCard._dueInShows = simpleCooldown('correct', queue.length);
+          queue.push(currentCard);
+        }
+      } else {
+        currentCard._streak = 0;
+        try {
+          await callApi("mark_known", { card_id: currentCard.id, known: false });
+        } catch (err) { /* тихо ігноруємо */ }
+        currentCard._dueInShows = simpleCooldown('wrong', queue.length);
+        queue.push(currentCard);
+      }
     }
+
+    document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
     nextCard();
   });
 });
