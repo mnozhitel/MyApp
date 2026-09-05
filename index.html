@@ -783,6 +783,16 @@
   .sense-item:hover { background: var(--glass-2); }
   .sense-item.active { border-color: var(--stroke-2); background: var(--glass-2); }
   .sense-item b { color: var(--cyan); font-size: 11px; letter-spacing: 0.04em; }
+  .translate-warning {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--amber);
+    border: 1px solid rgba(255, 181, 71, 0.3);
+    background: rgba(255, 181, 71, 0.08);
+    border-radius: var(--radius-row);
+    padding: 10px 12px;
+  }
+
   .sense-pos {
     font-size: 10px;
     text-transform: uppercase;
@@ -1229,6 +1239,20 @@
           <button class="btn-mini" id="btnSenseAll" style="align-self:flex-start;">📋 Усі значення</button>
           <div class="sense-list hidden" id="senseList"></div>
         </div>
+
+        <!-- Варіанти перекладу (як Alternatives у DeepL) -->
+        <div class="sense-bar hidden" id="altBar">
+          <div class="sense-head">
+            <div class="sense-title" id="altTitle"></div>
+            <div class="sense-nav">
+              <button class="btn-mini" id="btnAltPrev">‹</button>
+              <button class="btn-mini" id="btnAltNext">Інший переклад ›</button>
+            </div>
+          </div>
+          <button class="btn-mini" id="btnAltAll" style="align-self:flex-start;">📋 Усі варіанти</button>
+          <div class="sense-list hidden" id="altList"></div>
+        </div>
+        <div class="translate-warning hidden" id="translateWarning"></div>
         <img class="card-img hidden" id="draftImg" alt="">
         <div class="photo-bar" id="draftPhotoBar">
           <div class="photo-note" id="draftPhotoNote"></div>
@@ -3118,11 +3142,111 @@ el('btnSenseAll').addEventListener('click', () => {
   if (opening) renderSenseList();
 });
 
+/**
+ * Варіанти перекладу зі словника Azure - те саме, що «Alternatives»
+ * у DeepL. Одне слово майже завжди має кілька перекладів ("case" →
+ * випадок, справа, чохол), і лише людина знає, який їй потрібен.
+ */
+const altState = { alternatives: [], index: 0 };
+
+const POS_LABELS_UK = {
+  NOUN: 'іменник', VERB: 'дієслово', ADJ: 'прикметник', ADV: 'прислівник',
+  PREP: 'прийменник', PRON: 'займенник', CONJ: 'сполучник', DET: 'означник',
+  MODAL: 'модальне', OTHER: '',
+};
+
+const TRANSLATION_WARNINGS = {
+  transliterated: '⚠️ Схоже, слово не перекладено, а лише записано латиницею. '
+    + 'Перевір написання — або спробуй іншу форму слова.',
+  untranslated: '⚠️ Перекладач повернув те саме слово. Можливо, воно вже цією '
+    + 'мовою або його немає у словнику.',
+};
+
+function altLabelBits(a) {
+  const bits = [];
+  const pos = POS_LABELS_UK[a.pos] || '';
+  if (pos) bits.push(pos);
+  if (a.back && a.back.length) bits.push('← ' + a.back.slice(0, 3).join(', '));
+  return bits;
+}
+
+function renderAltBar() {
+  const bar = el('altBar');
+  const list = altState.alternatives;
+  bar.classList.toggle('hidden', list.length < 2);
+  if (list.length < 2) return;
+
+  const bits = altLabelBits(list[altState.index]);
+  bits.push(`варіант ${altState.index + 1} з ${list.length}`);
+  el('altTitle').textContent = bits.join(' · ');
+  renderAltList();
+}
+
+function renderAltList() {
+  const box = el('altList');
+  if (box.classList.contains('hidden')) return;
+  box.innerHTML = '';
+  altState.alternatives.forEach((a, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'sense-item' + (i === altState.index ? ' active' : '');
+    const pos = POS_LABELS_UK[a.pos] || '';
+    if (pos) {
+      const b = document.createElement('b');
+      b.textContent = pos;
+      btn.appendChild(b);
+      btn.appendChild(document.createElement('br'));
+    }
+    const back = a.back && a.back.length ? `  ← ${a.back.slice(0, 3).join(', ')}` : '';
+    btn.appendChild(document.createTextNode(`${i + 1}. ${a.text}${back}`));
+    btn.addEventListener('click', () => applyAlternative(i));
+    box.appendChild(btn);
+  });
+}
+
+/** Обраний варіант підставляється у форму - саме він і збережеться. */
+function applyAlternative(index) {
+  const list = altState.alternatives;
+  if (!list.length) return;
+  altState.index = (index + list.length) % list.length;
+  // Картка завжди "англійське слово + переклад": підставляємо обраний
+  // варіант у той бік, який НЕ є оригіналом користувача. Бік визначаємо
+  // за письмом самого варіанта: латиниця - це англійське слово, отже
+  // змінювати треба поле слова, інакше - поле перекладу.
+  const chosen = list[altState.index].text;
+  const chosenIsLatin = !/[^\u0000-\u007F]/.test(chosen);
+  if (chosenIsLatin) el('draftWord').value = chosen;
+  else el('draftDefinition').value = chosen;
+  renderAltBar();
+  haptic();
+}
+
+el('btnAltNext').addEventListener('click', () => applyAlternative(altState.index + 1));
+el('btnAltPrev').addEventListener('click', () => applyAlternative(altState.index - 1));
+el('btnAltAll').addEventListener('click', () => {
+  const box = el('altList');
+  const opening = box.classList.contains('hidden');
+  box.classList.toggle('hidden', !opening);
+  el('btnAltAll').textContent = opening ? '▲ Згорнути список' : '📋 Усі варіанти';
+  if (opening) renderAltList();
+});
+
 function showDraft(data, cardType, sourceNote) {
   el('draftWord').value = data.word || '';
   el('draftDefinition').value = data.definition || '';
   el('draftExamples').value = (data.examples || []).join('\n');
   el('draftSource').textContent = sourceNote || '';
+
+  altState.alternatives = Array.isArray(data.alternatives) ? data.alternatives : [];
+  altState.index = 0;
+  el('altList').classList.add('hidden');
+  el('btnAltAll').textContent = '📋 Усі варіанти';
+  renderAltBar();
+
+  // Чесно попереджаємо, коли перекладу не варто довіряти
+  const warn = el('translateWarning');
+  const warnText = TRANSLATION_WARNINGS[data.translation_warning];
+  warn.textContent = warnText || '';
+  warn.classList.toggle('hidden', !warnText);
 
   senseState.senses = Array.isArray(data.senses) ? data.senses : [];
   senseState.index = 0;
@@ -3166,9 +3290,14 @@ el('btnFetch').addEventListener('click', async () => {
       const lang = el('createLangSelect').value;
       const data = await callApi('translate_word', { text: query, target_language: lang });
       showDraft(
-        { word: data.word, definition: data.translation, examples: [] },
+        {
+          word: data.word, definition: data.translation, examples: [],
+          // Варіанти перекладу зі словника - як «Alternatives» у DeepL
+          alternatives: data.alternatives || [],
+          translation_warning: data.warning || '',
+        },
         'translation',
-        'Azure Translator',
+        data.via === 'dictionary' ? 'словник Azure' : 'Azure Translator',
       );
     } else {
       const data = await callApi('lookup_word', { word: query });
