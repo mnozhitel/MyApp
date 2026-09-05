@@ -675,6 +675,38 @@
     border: 1px solid var(--stroke);
   }
 
+  /* -------- керування ілюстрацією (лишити / замінити / прибрати) -------- */
+  .photo-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: -4px;
+  }
+  .photo-note {
+    font-size: 12px;
+    color: var(--muted-dim);
+    line-height: 1.35;
+  }
+  .photo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .btn-mini {
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid var(--stroke);
+    background: var(--glass);
+    color: var(--muted);
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .btn-mini:active { transform: scale(0.97); }
+  .btn-mini:disabled { opacity: 0.45; }
+  .btn-mini-danger { color: var(--pink); border-color: rgba(255, 95, 150, 0.3); }
+
   /* -------- поява / зникання картки при переході до наступної -------- */
 
   .card-stage.leaving {
@@ -1101,6 +1133,15 @@
           <div class="section-note" id="draftSource"></div>
         </div>
         <img class="card-img hidden" id="draftImg" alt="">
+        <div class="photo-bar" id="draftPhotoBar">
+          <div class="photo-note" id="draftPhotoNote"></div>
+          <div class="photo-actions">
+            <button class="btn-mini hidden" id="btnDraftPhotoPrev">‹</button>
+            <button class="btn-mini hidden" id="btnDraftPhotoNext">Інше фото ›</button>
+            <button class="btn-mini hidden" id="btnDraftPhotoFind">🖼 Знайти фото</button>
+            <button class="btn-mini btn-mini-danger hidden" id="btnDraftPhotoRemove">Без фото</button>
+          </div>
+        </div>
         <div class="field">
           <label class="field-label" for="draftWord">Слово / фраза</label>
           <input class="input" id="draftWord" type="text" autocomplete="off">
@@ -1235,6 +1276,16 @@
     <div class="sheet-head">
       <div class="sheet-title">Редагувати картку</div>
       <button class="sheet-close" data-close="scrimEditor">✕</button>
+    </div>
+    <img class="card-img hidden" id="editImg" alt="">
+    <div class="photo-bar" id="editPhotoBar">
+      <div class="photo-note" id="editPhotoNote"></div>
+      <div class="photo-actions">
+        <button class="btn-mini hidden" id="btnEditPhotoPrev">‹</button>
+        <button class="btn-mini hidden" id="btnEditPhotoNext">Інше фото ›</button>
+        <button class="btn-mini" id="btnEditPhotoFind">🖼 Знайти фото</button>
+        <button class="btn-mini btn-mini-danger hidden" id="btnEditPhotoRemove">Без фото</button>
+      </div>
     </div>
     <div class="field">
       <label class="field-label" for="editWord">Слово / фраза</label>
@@ -2404,6 +2455,9 @@ function openEditor(card) {
   el('editDefinition').value = card.definition || '';
   el('editExamples').value = (Array.isArray(card.examples) ? card.examples : []).join('\n');
   fillFolderSelect(el('editFolder'), card.folder_id || 'none');
+  // Наявне фото картки показуємо як поточний варіант; інші система
+  // підбере на вимогу кнопкою "Знайти фото"
+  setPhotoCandidates('edit', card.word, [], card.image_url, 'not_found');
 
   const stateNames = { new: 'нова', learning: 'вивчається', review: 'на повторенні', relearning: 'перевчається' };
   const parts = [`Стан: ${stateNames[card.state] || card.state || 'нова'}`];
@@ -2429,6 +2483,7 @@ el('btnEditSave').addEventListener('click', async () => {
       definition: el('editDefinition').value,
       examples: el('editExamples').value.split('\n').map((s) => s.trim()).filter(Boolean),
       folder_id: folderValue === 'none' ? null : folderValue,
+      image_url: photoCurrentUrl(photoPickers.edit),
     });
     const idx = state.cardsList.findIndex((c) => c.id === state.editingCard.id);
     if (idx !== -1) state.cardsList[idx] = { ...state.cardsList[idx], ...updated.card };
@@ -2662,20 +2717,170 @@ document.querySelectorAll('#createModeSeg button').forEach((btn) => {
   });
 });
 
+/**
+ * Керування ілюстрацією - спільне для чернетки нової картки й для
+ * редактора наявної. Система сама пропонує фото лише тоді, коли впевнена
+ * в ньому (Cambridge -> Wikidata -> Wikipedia); користувач завжди може
+ * лишити як є, перебрати інші варіанти або прибрати фото зовсім.
+ */
+const photoPickers = {};
+
+const PHOTO_SOURCE_LABELS = {
+  cambridge: 'ілюстрація зі словника Cambridge',
+  wikidata: 'Wikidata — фото прикріплене до поняття редакторами',
+  wikipedia: 'головне зображення статті Wikipedia',
+  manual: 'обрано вручну',
+};
+
+const PHOTO_REASONS = {
+  abstract_word: 'Це абстрактне поняття — картинка радше заплутає, ніж допоможе.',
+  part_of_speech: 'Службові слова наочно не покажеш.',
+  phrasal_verb: 'Фразове дієслово важко однозначно проілюструвати.',
+  too_many_words: 'Задовгий вираз для однієї ілюстрації.',
+  not_found: 'Не знайшов жодного фото, у якому можна бути впевненим.',
+  lookup_failed: 'Не вдалося звʼязатися з джерелами зображень.',
+};
+
+function createPhotoPicker(key, ids) {
+  const picker = {
+    candidates: [],
+    index: 0,
+    removed: false,
+    word: '',
+    reason: '',
+    ids,
+  };
+  photoPickers[key] = picker;
+  return picker;
+}
+
+function photoCurrentUrl(picker) {
+  if (picker.removed) return null;
+  const c = picker.candidates[picker.index];
+  return c ? c.url : null;
+}
+
+function renderPhotoPicker(key) {
+  const p = photoPickers[key];
+  if (!p) return;
+  const img = el(p.ids.img);
+  const url = photoCurrentUrl(p);
+
+  if (url) {
+    img.src = url;
+    img.classList.remove('hidden');
+  } else {
+    img.removeAttribute('src');
+    img.classList.add('hidden');
+  }
+
+  const many = !p.removed && p.candidates.length > 1;
+  el(p.ids.prev).classList.toggle('hidden', !many);
+  el(p.ids.next).classList.toggle('hidden', !many);
+  el(p.ids.remove).classList.toggle('hidden', !url);
+  // "Знайти фото" лишається доступним і тоді, коли фото вже є, але
+  // перебирати нічого: користувач має могти замінити його вручну
+  el(p.ids.find).classList.toggle('hidden', many);
+
+  const note = el(p.ids.note);
+  if (url) {
+    const c = p.candidates[p.index];
+    const src = PHOTO_SOURCE_LABELS[c.source] || c.source;
+    const which = many ? ` · ${p.index + 1} з ${p.candidates.length}` : '';
+    note.textContent = `${c.note || c.label || ''} ${c.note ? '· ' : ''}${src}${which}`.trim();
+  } else if (p.removed) {
+    note.textContent = 'Картка буде без ілюстрації.';
+  } else {
+    note.textContent = PHOTO_REASONS[p.reason] || 'Ілюстрації немає.';
+  }
+}
+
+function setPhotoCandidates(key, word, candidates, currentUrl, reason) {
+  const p = photoPickers[key];
+  if (!p) return;
+  p.word = word || '';
+  p.reason = reason || '';
+  p.removed = false;
+  p.candidates = Array.isArray(candidates) ? candidates.slice() : [];
+
+  // Картка, що вже має фото, але без списку варіантів (стара картка з
+  // бази) - показуємо наявне як єдиний варіант
+  if (currentUrl && !p.candidates.some((c) => c.url === currentUrl)) {
+    p.candidates.unshift({ url: currentUrl, source: 'manual', label: word || '', note: '' });
+  }
+  p.index = currentUrl ? Math.max(0, p.candidates.findIndex((c) => c.url === currentUrl)) : 0;
+  renderPhotoPicker(key);
+}
+
+async function findPhotoFor(key) {
+  const p = photoPickers[key];
+  if (!p || !p.word) { toast('Спершу впиши слово.'); return; }
+  const btn = el(p.ids.find);
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = 'Шукаю…';
+  try {
+    // Ручний пошук - користувач наполягає, тож показуємо все, що знайшли
+    const res = await callApi('find_image', { word: p.word });
+    if (!res.candidates || res.candidates.length === 0) {
+      p.reason = res.reason || 'not_found';
+      renderPhotoPicker(key);
+      toast('Не знайшов фото, у якому можна бути впевненим.');
+      return;
+    }
+    p.candidates = res.candidates;
+    p.index = 0;
+    p.removed = false;
+    renderPhotoPicker(key);
+  } catch (e) {
+    toast('Не вдалося пошукати фото.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+function wirePhotoPicker(key, ids) {
+  createPhotoPicker(key, ids);
+  el(ids.next).addEventListener('click', () => {
+    const p = photoPickers[key];
+    if (!p.candidates.length) return;
+    p.index = (p.index + 1) % p.candidates.length;
+    renderPhotoPicker(key);
+    haptic();
+  });
+  el(ids.prev).addEventListener('click', () => {
+    const p = photoPickers[key];
+    if (!p.candidates.length) return;
+    p.index = (p.index - 1 + p.candidates.length) % p.candidates.length;
+    renderPhotoPicker(key);
+    haptic();
+  });
+  el(ids.remove).addEventListener('click', () => {
+    const p = photoPickers[key];
+    p.removed = true;
+    renderPhotoPicker(key);
+    haptic();
+  });
+  el(ids.find).addEventListener('click', () => findPhotoFor(key));
+}
+
+wirePhotoPicker('draft', {
+  img: 'draftImg', note: 'draftPhotoNote', prev: 'btnDraftPhotoPrev',
+  next: 'btnDraftPhotoNext', remove: 'btnDraftPhotoRemove', find: 'btnDraftPhotoFind',
+});
+wirePhotoPicker('edit', {
+  img: 'editImg', note: 'editPhotoNote', prev: 'btnEditPhotoPrev',
+  next: 'btnEditPhotoNext', remove: 'btnEditPhotoRemove', find: 'btnEditPhotoFind',
+});
+
 function showDraft(data, cardType, sourceNote) {
   el('draftWord').value = data.word || '';
   el('draftDefinition').value = data.definition || '';
   el('draftExamples').value = (data.examples || []).join('\n');
   el('draftSource').textContent = sourceNote || '';
 
-  const img = el('draftImg');
-  if (data.image_url) {
-    img.src = data.image_url;
-    img.classList.remove('hidden');
-  } else {
-    img.removeAttribute('src');
-    img.classList.add('hidden');
-  }
+  setPhotoCandidates('draft', data.word, data.image_candidates, data.image_url, data.image_reason);
 
   state.draftMeta = {
     audio_url: data.audio_url || null,
@@ -2759,7 +2964,9 @@ el('btnDraftSave').addEventListener('click', async () => {
       folder_id: folderValue === 'none' ? null : folderValue,
       card_type: state.draftMeta ? state.draftMeta.card_type : 'manual',
       audio_url: state.draftMeta ? state.draftMeta.audio_url : null,
-      image_url: state.draftMeta ? state.draftMeta.image_url : null,
+      // Береться саме те фото, яке користувач лишив на екрані
+      // (з урахуванням "інше фото" та "без фото")
+      image_url: photoCurrentUrl(photoPickers.draft),
     });
 
     haptic('medium');
