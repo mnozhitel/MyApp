@@ -341,6 +341,13 @@
     color: var(--ink);
   }
 
+  .btn-outline.active {
+    color: var(--cyan);
+    border-color: rgba(55, 230, 255, 0.5);
+    background: rgba(55, 230, 255, 0.1);
+    box-shadow: var(--glow-cyan);
+  }
+
   .btn-danger {
     background: rgba(255, 95, 150, 0.12);
     border-color: rgba(255, 95, 150, 0.38);
@@ -1259,13 +1266,13 @@
           <button class="text-link-btn" id="btnCancelSelect">Скасувати</button>
         </div>
       </div>
+      <button class="btn btn-danger btn-block hidden" id="btnDeleteSelected">🗑 Видалити обрані</button>
       <div class="section-head">
         <div class="section-title">Мої картки</div>
         <div class="section-note" id="cardsCount"></div>
       </div>
       <div class="list" id="cardList"></div>
       <button class="btn btn-outline btn-block hidden" id="btnLoadMore">Показати ще</button>
-      <button class="btn btn-danger btn-block hidden" id="btnDeleteSelected">🗑 Видалити обрані</button>
     </section>
 
     <!-- ======================= ВКЛАДКА: СТВОРИТИ ======================= -->
@@ -1358,25 +1365,38 @@
         <div class="state-title" id="modeSelectTitle">Обери режим вивчення</div>
         <div class="state-text" id="modeSelectSub">Можна перемкнути будь-коли.</div>
         <div class="mode-buttons">
-          <button class="mode-btn mode-btn-browse" id="btnModeBrowse">
-            <span class="mode-btn-title">🗂 Перегляд</span>
-            <span class="mode-btn-sub" id="modeBrowseSub">Просто гортати картки, без відповідей</span>
-          </button>
-          <button class="mode-btn mode-btn-simple" id="btnModeSimple">
-            <span class="mode-btn-title">🟢 Навчання</span>
-            <span class="mode-btn-sub" id="modeSimpleSub">Знаю / Не знаю</span>
+          <button class="mode-btn mode-btn-simple" id="btnChapterSimple">
+            <span class="mode-btn-title">🟢 Простий</span>
+            <span class="mode-btn-sub" id="modeSimpleChapterSub">Флеш-картки, Навчання, Тест</span>
           </button>
           <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
             <span class="mode-btn-title">🧠 Просунутий</span>
             <span class="mode-btn-sub" id="modeAdvancedSub">Розумний алгоритм повторення (FSRS)</span>
+          </button>
+        </div>
+        <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
+      </div>
+
+      <div class="state-screen hidden" id="stateSimpleSelect">
+        <div class="state-icon">🟢</div>
+        <div class="state-title">Простий</div>
+        <div class="state-text" id="simpleSelectSub">Обери, як вчити цей набір.</div>
+        <button class="text-link-btn" id="btnOpenSettings">⚙️ Settings</button>
+        <div class="mode-buttons">
+          <button class="mode-btn mode-btn-browse" id="btnModeBrowse">
+            <span class="mode-btn-title">🗂 Флеш-картки</span>
+            <span class="mode-btn-sub" id="modeBrowseSub">Одна за одною по черзі, без алгоритму</span>
+          </button>
+          <button class="mode-btn mode-btn-simple" id="btnModeSimple">
+            <span class="mode-btn-title">📚 Навчання</span>
+            <span class="mode-btn-sub" id="modeSimpleSub">Знаю / Не знаю</span>
           </button>
           <button class="mode-btn mode-btn-test" id="btnModeTest">
             <span class="mode-btn-title">🧪 Тест</span>
             <span class="mode-btn-sub" id="modeTestSub">Перевір усі картки набору одразу</span>
           </button>
         </div>
-        <button class="text-link-btn" id="btnOpenSettings">⚙️ Налаштування письма</button>
-        <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
+        <button class="text-link-btn" id="btnBackFromSimpleSelect">← Назад</button>
       </div>
 
       <div class="state-screen hidden" id="stateLoading">
@@ -1574,32 +1594,30 @@
 <div class="scrim hidden" id="scrimSettings">
   <div class="sheet">
     <div class="sheet-head">
-      <div class="sheet-title">⚙️ Налаштування письма</div>
+      <div class="sheet-title">⚙️ Settings</div>
       <button class="sheet-close" data-close="scrimSettings">✕</button>
     </div>
-    <div class="hint">Стосується режимів «Навчання» і «Тест» — які саме показувати картку та відповідь.</div>
+    <div class="hint">Стосується підрежимів «Простого» — «Навчання» і «Тест».</div>
     <div class="field">
-      <label class="field-label">Як відповідати</label>
+      <label class="field-label">Писати відповідь</label>
       <div class="seg" id="segWriteMode">
-        <button data-val="off" type="button">Обирати картку</button>
-        <button data-val="on" type="button">Писати відповідь</button>
+        <button data-val="off" type="button">Off</button>
+        <button data-val="on" type="button">On</button>
+      </div>
+    </div>
+    <div class="field hidden" id="showExamplesField">
+      <label class="field-label">Показувати приклади?</label>
+      <div class="seg" id="segShowExamples">
+        <button data-val="off" type="button">Off</button>
+        <button data-val="on" type="button">On</button>
       </div>
     </div>
     <div class="field">
-      <label class="field-label">Що показати першим</label>
+      <label class="field-label">Передня сторона картки</label>
       <div class="seg" id="segFrontSide">
-        <button data-val="term" type="button">Слово</button>
-        <button data-val="definition" type="button">Визначення</button>
+        <button data-val="term" type="button">Слово/Фраза</button>
+        <button data-val="definition" type="button">Визначення/Переклад</button>
       </div>
-      <div class="hint" id="frontSideHint"></div>
-    </div>
-    <div class="field" id="hideExamplesField">
-      <label class="field-label">Приклади, коли пишеш слово</label>
-      <div class="seg" id="segHideExamples">
-        <button data-val="show" type="button">Показувати</button>
-        <button data-val="hide" type="button">Сховати</button>
-      </div>
-      <div class="hint">Слово в прикладах і визначенні завжди приховане, щоб не підказувати відповідь.</div>
     </div>
   </div>
 </div>
@@ -1763,17 +1781,17 @@ const state = {
 const CARDS_PAGE_SIZE = 50;
 const CATEGORY_LABELS = { not_studied: 'Ще не вчив', still_learning: 'Ще вчу', mastered: 'Знаю напам’ять' };
 
-// ==================== Налаштування письма (Навчання/Тест) ====================
+// ==================== Settings (підрежими "Простого": Навчання/Тест) ====================
 // Зберігаються локально на пристрої (localStorage самого Mini App'у,
 // не пов'язано з ботом чи базою) - три простих перемикачі замість форми:
-//  writeMode    - false: гортати картку і самому казати "знаю/не знаю";
-//                 true:  друкувати відповідь, система перевіряє сама.
-//  frontSide    - що показуємо СПЕРШУ ('term' - слово, 'definition' - визначення);
-//                 писати треба ту сторону, якої не показали.
-//  hideExamples - коли треба написати САМЕ СЛОВО (frontSide='definition'),
-//                 чи показувати приклади (вони можуть підказати відповідь).
+//  writeMode     - false: гортати картку і самому казати "знаю/не знаю";
+//                  true:  друкувати відповідь, система перевіряє сама.
+//  showExamples  - лише коли writeMode=true: чи показувати приклади разом
+//                  із загадкою (слово в них НЕ приховується).
+//  frontSide     - що показуємо СПЕРШУ ('term' - слово/фраза, 'definition' -
+//                  визначення/переклад); писати треба ту сторону, якої не показали.
 const SETTINGS_KEY = 'ea_write_settings_v1';
-const SETTINGS_DEFAULT = { writeMode: false, frontSide: 'term', hideExamples: false };
+const SETTINGS_DEFAULT = { writeMode: false, frontSide: 'term', showExamples: true };
 
 function loadSettings() {
   try {
@@ -1792,11 +1810,8 @@ function saveSettings() {
 function renderSettingsUi() {
   document.querySelectorAll('#segWriteMode button').forEach((b) => b.classList.toggle('active', b.dataset.val === (settings.writeMode ? 'on' : 'off')));
   document.querySelectorAll('#segFrontSide button').forEach((b) => b.classList.toggle('active', b.dataset.val === settings.frontSide));
-  document.querySelectorAll('#segHideExamples button').forEach((b) => b.classList.toggle('active', b.dataset.val === (settings.hideExamples ? 'hide' : 'show')));
-  el('frontSideHint').textContent = settings.frontSide === 'term'
-    ? 'Побачиш слово, писатимеш визначення/переклад.'
-    : 'Побачиш визначення/переклад, писатимеш слово.';
-  el('hideExamplesField').classList.toggle('hidden', settings.frontSide !== 'definition');
+  document.querySelectorAll('#segShowExamples button').forEach((b) => b.classList.toggle('active', b.dataset.val === (settings.showExamples ? 'on' : 'off')));
+  el('showExamplesField').classList.toggle('hidden', !settings.writeMode);
 }
 
 // =====================================================================
@@ -2071,9 +2086,9 @@ document.querySelectorAll('#segFrontSide button').forEach((btn) => {
     renderSettingsUi();
   });
 });
-document.querySelectorAll('#segHideExamples button').forEach((btn) => {
+document.querySelectorAll('#segShowExamples button').forEach((btn) => {
   btn.addEventListener('click', () => {
-    settings.hideExamples = btn.dataset.val === 'hide';
+    settings.showExamples = btn.dataset.val === 'on';
     saveSettings();
     renderSettingsUi();
   });
@@ -2351,6 +2366,7 @@ el('btnResetProgress').addEventListener('click', async () => {
 
 const sessionScreens = {
   modeSelect: el('stateModeSelect'),
+  simpleSelect: el('stateSimpleSelect'),
   loading: el('stateLoading'),
   error: el('stateError'),
   empty: el('stateEmpty'),
@@ -2474,16 +2490,25 @@ function scopeCounts() {
 
 function openModeSelect() {
   const counts = scopeCounts();
-  const writeSuffix = settings.writeMode ? ' · режим "написати відповідь"' : '';
   el('modeSelectTitle').textContent = state.studyScopeName;
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
-  el('modeBrowseSub').textContent = `${cardsWord(counts.total)} · гортай у своєму темпі, без відповідей`;
-  el('modeSimpleSub').textContent =
-    `${settings.writeMode ? 'Пиши відповідь' : 'Знаю / Не знаю'} · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · MASTERED дає лише Тест`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
-  el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів${writeSuffix}`;
   showView('session');
   showSessionScreen('modeSelect');
+}
+
+function openSimpleSelect() {
+  const counts = scopeCounts();
+  el('simpleSelectSub').textContent = `${cardsWord(counts.total)} у наборі — обери, як вчити.`;
+  el('modeBrowseSub').textContent = `${cardsWord(counts.total)} · по черзі, до кінця набору`;
+  el('modeSimpleSub').textContent =
+    `${settings.writeMode ? 'Пиши відповідь' : 'Знаю / Не знаю'} · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · MASTERED дає лише Тест`;
+  el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів${writeSuffix()}`;
+  showSessionScreen('simpleSelect');
+}
+
+function writeSuffix() {
+  return settings.writeMode ? ' · режим "написати відповідь"' : '';
 }
 
 async function startSession(mode) {
@@ -2605,6 +2630,14 @@ async function loadBrowsePage() {
 
 function renderBrowsePos() {
   el('browsePos').textContent = `${browseIndex + 1} / ${browseCards.length}${browseHasMore ? '+' : ''}`;
+  el('btnBrowsePrev').disabled = browseIndex === 0;
+}
+
+/** "Флеш-картки" - без алгоритму, по черзі, до кінця набору (не по колу). */
+function finishBrowseSession() {
+  currentCard = null;
+  el('stateDoneText').textContent = `Переглянуто карток: ${browseCards.length}. Гарна робота!`;
+  showSessionScreen('done');
 }
 
 async function goToBrowseCard(index) {
@@ -2625,20 +2658,22 @@ async function goToBrowseCard(index) {
 }
 
 el('btnBrowsePrev').addEventListener('click', () => {
-  if (currentMode !== 'browse' || browseCards.length === 0) return;
+  if (currentMode !== 'browse' || browseCards.length === 0 || browseIndex === 0) return;
   haptic();
-  const prevIndex = browseIndex > 0 ? browseIndex - 1 : browseCards.length - 1; // по колу
-  goToBrowseCard(prevIndex);
+  goToBrowseCard(browseIndex - 1);
 });
 
 el('btnBrowseNext').addEventListener('click', async () => {
-  if (currentMode !== 'browse' || browseCards.length === 0) return;
+  if (currentMode !== 'browse' || browseCards.length === 0 || animating) return;
   haptic();
   if (browseIndex >= browseCards.length - 1 && browseHasMore) {
     await loadBrowsePage();
   }
-  const nextIndex = browseIndex < browseCards.length - 1 ? browseIndex + 1 : 0; // по колу
-  goToBrowseCard(nextIndex);
+  if (browseIndex >= browseCards.length - 1) {
+    finishBrowseSession();
+    return;
+  }
+  goToBrowseCard(browseIndex + 1);
 });
 
 /**
@@ -2794,18 +2829,6 @@ function answersMatch(given, correct) {
 function writeTargetIsWord() { return settings.frontSide === 'definition'; }
 function writeTargetText(card) { return writeTargetIsWord() ? card.word : card.definition; }
 
-/**
- * Ховає термін усередині тексту визначення/прикладів - інакше відповідь
- * підказувала б сама себе. Ловимо слово як окреме слово (з урахуванням
- * можливого закінчення 's'/'es'), а не будь-яку підрядну послідовність.
- */
-function redactTerm(text, term) {
-  if (!text || !term) return text;
-  const esc = String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`\\b${esc}(?:'s|es|s)?\\b`, 'gi');
-  return String(text).replace(re, (m) => '▢'.repeat(Math.max(3, m.length)));
-}
-
 function renderCard(card) {
   const writeActive = settings.writeMode && (currentMode === 'simple' || currentMode === 'test');
 
@@ -2819,28 +2842,25 @@ function renderCard(card) {
     el('writeRow').classList.remove('hidden');
     el('writePromptCard').classList.remove('hidden');
 
-    const showWord = settings.frontSide === 'term'; // true: бачимо слово, пишемо визначення
+    // frontSide='term': бачимо слово/фразу, пишемо визначення/переклад.
+    // frontSide='definition': бачимо визначення/переклад, пишемо слово/фразу.
+    const showWord = settings.frontSide === 'term';
     el('writePromptEyebrow').textContent = showWord
-      ? 'Слово'
+      ? 'Слово/Фраза'
       : (card.card_type === 'translation' ? 'Переклад' : 'Визначення');
+    el('writePromptWord').textContent = showWord ? card.word : card.definition;
 
-    if (showWord) {
-      el('writePromptWord').textContent = card.word;
-      el('writePromptExamplesWrap').classList.add('hidden');
-    } else {
-      el('writePromptWord').textContent = redactTerm(card.definition, card.word);
-      const examples = Array.isArray(card.examples) ? card.examples : [];
-      const showExamples = examples.length > 0 && !settings.hideExamples;
-      el('writePromptExamplesWrap').classList.toggle('hidden', !showExamples);
-      if (showExamples) {
-        const ul = el('writePromptExamples');
-        ul.innerHTML = '';
-        examples.forEach((ex) => {
-          const li = document.createElement('li');
-          li.textContent = redactTerm(ex, card.word);
-          ul.appendChild(li);
-        });
-      }
+    const examples = Array.isArray(card.examples) ? card.examples : [];
+    const showExamples = examples.length > 0 && settings.showExamples;
+    el('writePromptExamplesWrap').classList.toggle('hidden', !showExamples);
+    if (showExamples) {
+      const ul = el('writePromptExamples');
+      ul.innerHTML = '';
+      examples.forEach((ex) => {
+        const li = document.createElement('li');
+        li.textContent = ex;
+        ul.appendChild(li);
+      });
     }
 
     el('writeInput').value = '';
@@ -3086,6 +3106,9 @@ el('btnWriteNext').addEventListener('click', async () => {
   nextCard();
 });
 
+el('btnChapterSimple').addEventListener('click', openSimpleSelect);
+el('btnBackFromSimpleSelect').addEventListener('click', () => showSessionScreen('modeSelect'));
+
 el('btnModeBrowse').addEventListener('click', () => startSession('browse'));
 el('btnModeSimple').addEventListener('click', () => startSession('simple'));
 el('btnModeAdvanced').addEventListener('click', () => startSession('advanced'));
@@ -3112,8 +3135,18 @@ async function quitSession() {
 el('btnQuitSession').addEventListener('click', quitSession);
 el('btnBackFromMode').addEventListener('click', quitSession);
 el('btnBackFromError').addEventListener('click', quitSession);
-el('btnBackToModeSelectEmpty').addEventListener('click', openModeSelect);
-el('btnBackToModeSelectDone').addEventListener('click', openModeSelect);
+// Повертає туди, звідки прийшли: підрежими "Простого" (Флеш-картки/Навчання/
+// Тест) - назад у список підрежимів "Простого", а не одразу на вибір розділу.
+function backToModeSelect() {
+  if (currentMode === 'browse' || currentMode === 'simple' || currentMode === 'test') {
+    openSimpleSelect();
+  } else {
+    openModeSelect();
+  }
+}
+
+el('btnBackToModeSelectEmpty').addEventListener('click', backToModeSelect);
+el('btnBackToModeSelectDone').addEventListener('click', backToModeSelect);
 
 // ==================== ВКЛАДКА "КАРТКИ" ====================
 
@@ -3192,6 +3225,8 @@ function exitSelectMode() {
   state.selectedIds = new Set();
   el('cardSelectBar').classList.add('hidden');
   el('btnDeleteSelected').classList.add('hidden');
+  el('btnToggleSelect').classList.remove('active');
+  renderCardList();
 }
 
 function updateSelectBar() {
@@ -3202,12 +3237,13 @@ function updateSelectBar() {
 el('btnToggleSelect').addEventListener('click', () => {
   if (state.selectMode) {
     exitSelectMode();
-  } else {
-    state.selectMode = true;
-    state.selectedIds = new Set();
-    el('cardSelectBar').classList.remove('hidden');
-    updateSelectBar();
+    return;
   }
+  state.selectMode = true;
+  state.selectedIds = new Set();
+  el('cardSelectBar').classList.remove('hidden');
+  el('btnToggleSelect').classList.add('active');
+  updateSelectBar();
   renderCardList();
 });
 
@@ -3261,7 +3297,6 @@ el('btnDeleteSelected').addEventListener('click', async () => {
     const removed = new Set(ids);
     state.cardsList = state.cardsList.filter((c) => !removed.has(c.id));
     exitSelectMode();
-    renderCardList();
     loadOverview();
     toast('Картки видалено');
   } catch (e) {
