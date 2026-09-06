@@ -2184,13 +2184,38 @@ let testKnownCount = 0; // лише для режиму 'test' - підсумк�
 let testTotalCount = 0;
 
 /**
- * "Простий" режим більше не показує картки по колу - у нього своя чергова
- * логіка, схожа на те, як влаштований Quizlet Learn: картка, яку щойно
- * пропустили або не знали, повертається швидко, а "вивченою" в межах цієї
- * сесії вважається лише після кількох ПОСПІЛЬ правильних відповідей
- * (streak), а не з першого разу. Все це - тимчасовий стан лише в межах
- * поточної сесії (поля _streak/_dueInShows), на бекенд іде тільки фінальний
- * результат.
+ * "Простий" режим більше не показує картки по колу - у нього своя логіка
+ * оцінки "наскільки свіжа картка в пам'яті ЗАРАЗ", натхненна дослідницькою
+ * статтею самого Quizlet про Learn (arXiv:1803.00111, "Predicting Recall
+ * Probability to Adaptively Prioritize Study"): кожна картка має оцінку
+ * ймовірності пригадування, яка спадає з часом (forgetting curve), а
+ * правильна відповідь після ДОВШОГО очікування - набагато сильніший доказ
+ * знання, ніж швидка правильна відповідь одразу після помилки (spacing
+ * effect). Стаття також показує, що відразу після відповіді (правильної
+ * ЧИ неправильної - бо неправильну одразу супроводжує показ вірної
+ * відповіді) оцінка скидається на "щойно освіжено".
+ *
+ * Реалізація - проста "half-life" модель (як у Duolingo, за духом та сама
+ * "power law" ідея, що й у Quizlet, без потреби в даних мільйонів
+ * користувачів для підбору вагів):
+ *   - `_stability`  - "період напіврозпаду" картки в тактах: за стільки
+ *     тактів очікування впевненість впаде вдвічі. Росте від правильних
+ *     відповідей (тим більше, чим довшим був підтверджений інтервал),
+ *     падає від помилки.
+ *   - `_ticksWaiting` - скільки тактів минуло відколи картку показували
+ *     востаннє; росте щотакт, скидається на 0 при показі.
+ *   - впевненість(картка) = 0.5 ^ (_ticksWaiting / _stability)
+ * Картка з НАЙНИЖЧОЮ впевненістю показується першою - так само, як Quizlet
+ * "жадібно" обирає термін з найменшою ймовірністю пригадування й
+ * перераховує це після кожної відповіді.
+ *
+ * Це заразом прибирає окремий "кулдаун" і окремий захист від голодування
+ * (яким доводилось латати попередню, засновану на streak, версію): щойно
+ * показана картка має _ticksWaiting=0 -> впевненість=1 (найвища, її не
+ * покажуть знову негайно), а далі впевненість МОНОТОННО спадає з кожним
+ * тактом очікування - тож будь-яка картка рано чи пізно неминуче стає
+ * найслабшою і буде показана. Жодна картка не може застрягнути в черзі
+ * назавжди, і не потрібен окремий лічильник "скільки чекала".
  *
  * Так само, як Quizlet Learn не вивалює на екран весь великий набір одразу,
  * а тримає в роботі лише невелику "пачку" термінів і підмішує наступні лише
@@ -2200,40 +2225,43 @@ let testTotalCount = 0;
  * остаточно "вивчається" (не при кожній помилці - лишень коли картка йде
  * з сесії насовсім). Прогрес-бар при цьому все одно рахує ввесь набір
  * (reviewedCount + queue + pool), а не тільки поточну пачку.
+ *
+ * "Вивченою" картка стає після SIMPLE_MIN_CORRECT правильних відповідей
+ * ЗАГАЛОМ (не обов'язково поспіль - помилка між ними більше не скидає цей
+ * лічильник, лише б'є по впевненості й ставить картку в чергу на повторний
+ * показ). Це свідомо суворіше за нинішній Quizlet, який, за повідомленнями
+ * користувачів, іноді зараховує термін вивченим після ОДНІЄЇ правильної
+ * відповіді - схоже, заради швидшого відчуття прогресу, а не тому, що це
+ * краще для запам'ятовування.
  */
-const SIMPLE_MASTERY_STREAK = 2; // скільки влучань поспіль треба, щоб картка "вивчилась"
+const SIMPLE_MIN_CORRECT = 2; // скільки правильних відповідей ЗАГАЛОМ треба, щоб картка "вивчилась"
 const SIMPLE_BATCH_SIZE = 10; // скільки карток одночасно "в роботі" у Простому режимі
+const SIMPLE_INITIAL_STABILITY = 1; // початковий "період напіврозпаду" (в тактах) для нової картки
+const SIMPLE_SPACING_GROWTH = 0.5; // наскільки сильно довший підтверджений інтервал підвищує stability
+const SIMPLE_WRONG_PENALTY = 0.3; // у скільки разів падає stability після помилки
+const SIMPLE_MIN_STABILITY = 0.5; // нижня межа stability - щоб не було ділення на майже нуль
 
-/** Скільки карток має пройти, перш ніж ця картка знову стане "доступною". */
-function simpleCooldown(kind, otherCardsInQueue) {
-  const base = kind === 'wrong' ? 2 : 3; // неправильну відповідь повертаємо швидше
-  return Math.max(1, Math.min(base, otherCardsInQueue || 1));
+/** Поточна оцінка "ймовірності пригадування" картки: 1 = щойно показана й певна, спадає з часом. */
+function simpleConfidence(c) {
+  if (c._neverShown) return 0; // ще не показана жодного разу - завжди найвищий пріоритет
+  return Math.pow(0.5, (c._ticksWaiting || 0) / (c._stability || SIMPLE_INITIAL_STABILITY));
 }
 
 /**
- * Обирає індекс наступної картки в "Простому" режимі: серед карток, чий
- * "кулдаун" уже минув, першою йде та, що має найнижчий streak (тобто
- * найслабше засвоєна) - так само, як Quizlet показує першою картку з
- * найнижчою ймовірністю пригадування, а не просто наступну по черзі.
+ * Обирає індекс наступної картки в "Простому" режимі: завжди та, що має
+ * найнижчу поточну впевненість (найслабше засвоєна ЗАРАЗ) - так само, як
+ * Quizlet жадібно обирає термін з найменшою ймовірністю пригадування, а не
+ * просто наступний по черзі.
  */
 function pickSimpleIndex() {
   let bestIdx = -1;
-  let bestKey = null;
+  let bestConf = null;
   for (let i = 0; i < queue.length; i++) {
-    const c = queue[i];
-    if ((c._dueInShows || 0) > 0) continue;
-    const key = c._streak || 0;
-    if (bestKey === null || key < bestKey) {
-      bestKey = key;
+    const conf = simpleConfidence(queue[i]);
+    if (bestConf === null || conf < bestConf) {
+      bestConf = conf;
       bestIdx = i;
     }
-  }
-  if (bestIdx !== -1) return bestIdx;
-  // Жодна картка ще не "дозріла" - беремо ту, якій лишилось чекати найменше
-  let minDue = Infinity;
-  for (let i = 0; i < queue.length; i++) {
-    const due = queue[i]._dueInShows || 0;
-    if (due < minDue) { minDue = due; bestIdx = i; }
   }
   return bestIdx;
 }
@@ -2248,7 +2276,7 @@ function openModeSelect() {
   const counts = scopeCounts();
   el('modeSelectTitle').textContent = state.studyScopeName;
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
-  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · "вивчена" після 2 влучань поспіль`;
+  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · "вивчена" після ${SIMPLE_MIN_CORRECT} правильних відповідей`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
   el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів`;
   showView('session');
@@ -2268,8 +2296,11 @@ async function startSession(mode) {
   try {
     const action = mode === 'simple' ? 'get_unknown_cards' : mode === 'test' ? 'get_all_cards' : 'get_due_cards';
     const data = await callApi(action, { folder: state.studyScope });
-    // _streak/_dueInShows - службові поля для чергової логіки "Простого" режиму
-    const cards = (data.cards || []).map((c) => ({ ...c, _streak: 0, _dueInShows: 0 }));
+    // _stability/_ticksWaiting/_correctCount/_neverShown - службові поля моделі
+    // "впевненості, що спадає з часом" для чергової логіки "Простого" режиму
+    const cards = (data.cards || []).map((c) => ({
+      ...c, _stability: SIMPLE_INITIAL_STABILITY, _ticksWaiting: 0, _correctCount: 0, _neverShown: true,
+    }));
     if (mode === 'simple') {
       // Активна пачка - не більше SIMPLE_BATCH_SIZE карток одночасно; решта чекає в pool
       queue = cards.slice(0, SIMPLE_BATCH_SIZE);
@@ -2335,8 +2366,10 @@ function nextCard() {
   hideRateRows();
 
   if (currentMode === 'simple') {
-    // "Тік" сесії - наближає момент, коли картки з кулдауном знову стануть доступні
-    queue.forEach((c) => { if (c._dueInShows > 0) c._dueInShows -= 1; });
+    // "Тік" сесії - усі картки в активній пачці на такт "стають старішими",
+    // тож їхня впевненість (simpleConfidence) трохи спадає перед вибором
+    // наступної.
+    queue.forEach((c) => { c._ticksWaiting = (c._ticksWaiting || 0) + 1; });
     // Підтягуємо наступні картки з pool, щоб активна пачка знову була
     // повною (SIMPLE_BATCH_SIZE) - саме тут "нові" картки заходять у гру,
     // а не всі одразу на старті сесії
@@ -2551,26 +2584,39 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
       if (known) testKnownCount += 1;
       reviewedCount += 1;
     } else if (currentMode === 'simple') {
-      // Розумна черга: картка вважається "вивченою" лише після
-      // SIMPLE_MASTERY_STREAK влучань ПОСПІЛЬ. Хибна відповідь одразу
-      // скидає лічильник і повертає картку в чергу швидше, ніж коректна.
+      // Впевненість, що спадає з часом: скільки ця картка вже чекала своєї
+      // черги (з поправкою на те, що щойно введена картка ще не показувалась
+      // жодного разу - для неї підтвердженого інтервалу ще нема).
+      const interval = currentCard._neverShown ? 0 : (currentCard._ticksWaiting || 0);
+      currentCard._neverShown = false;
+
       if (known) {
-        currentCard._streak = (currentCard._streak || 0) + 1;
-        if (currentCard._streak >= SIMPLE_MASTERY_STREAK) {
+        // Довший підтверджений інтервал перед правильною відповіддю - набагато
+        // сильніший доказ знання (spacing effect), ніж швидка вгадана відповідь
+        // одразу після помилки - тож stability росте пропорційно до interval.
+        currentCard._stability = (currentCard._stability || SIMPLE_INITIAL_STABILITY) * (1 + SIMPLE_SPACING_GROWTH * interval);
+        currentCard._correctCount = (currentCard._correctCount || 0) + 1;
+        currentCard._ticksWaiting = 0;
+
+        if (currentCard._correctCount >= SIMPLE_MIN_CORRECT) {
+          // "Вивчена" - SIMPLE_MIN_CORRECT правильних відповідей ЗАГАЛОМ,
+          // не обов'язково поспіль (помилка між ними більше не скидає цей
+          // лічильник до нуля - вона лише б'є по stability, див. нижче).
           try {
             await callApi("mark_known", { card_id: currentCard.id, known: true });
           } catch (err) { /* тихо ігноруємо */ }
           reviewedCount += 1; // картка справді вивчена в цій сесії
         } else {
-          currentCard._dueInShows = simpleCooldown('correct', queue.length);
           queue.push(currentCard);
         }
       } else {
-        currentCard._streak = 0;
+        // Помилка не скидає _correctCount - лише різко знижує stability,
+        // тож картка одразу стає "найслабшою" і скоро покажеться знову.
+        currentCard._stability = Math.max(SIMPLE_MIN_STABILITY, (currentCard._stability || SIMPLE_INITIAL_STABILITY) * SIMPLE_WRONG_PENALTY);
+        currentCard._ticksWaiting = 0;
         try {
           await callApi("mark_known", { card_id: currentCard.id, known: false });
         } catch (err) { /* тихо ігноруємо */ }
-        currentCard._dueInShows = simpleCooldown('wrong', queue.length);
         queue.push(currentCard);
       }
     }
