@@ -2175,6 +2175,7 @@ function showSessionScreen(name) {
 
 let currentMode = null; // 'simple' | 'advanced' | 'test'
 let queue = [];
+let pool = []; // "Простий" режим: картки, які ще НЕ введені в активну пачку
 let currentCard = null;
 let flipped = false;
 let reviewedCount = 0;
@@ -2190,8 +2191,18 @@ let testTotalCount = 0;
  * (streak), а не з першого разу. Все це - тимчасовий стан лише в межах
  * поточної сесії (поля _streak/_dueInShows), на бекенд іде тільки фінальний
  * результат.
+ *
+ * Так само, як Quizlet Learn не вивалює на екран весь великий набір одразу,
+ * а тримає в роботі лише невелику "пачку" термінів і підмішує наступні лише
+ * коли попередні вивчені - активна черга обмежена SIMPLE_BATCH_SIZE картками.
+ * Решта чекає в `pool` (у тому ж порядку, що прийшов з бекенда) і по одній
+ * картці підтягується в чергу щоразу, коли якась картка з активної пачки
+ * остаточно "вивчається" (не при кожній помилці - лишень коли картка йде
+ * з сесії насовсім). Прогрес-бар при цьому все одно рахує ввесь набір
+ * (reviewedCount + queue + pool), а не тільки поточну пачку.
  */
 const SIMPLE_MASTERY_STREAK = 2; // скільки влучань поспіль треба, щоб картка "вивчилась"
+const SIMPLE_BATCH_SIZE = 10; // скільки карток одночасно "в роботі" у Простому режимі
 
 /** Скільки карток має пройти, перш ніж ця картка знову стане "доступною". */
 function simpleCooldown(kind, otherCardsInQueue) {
@@ -2237,7 +2248,7 @@ function openModeSelect() {
   const counts = scopeCounts();
   el('modeSelectTitle').textContent = state.studyScopeName;
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
-  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · картка "вивчена" після 2 влучань поспіль`;
+  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · "вивчена" після 2 влучань поспіль`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
   el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів`;
   showView('session');
@@ -2258,10 +2269,18 @@ async function startSession(mode) {
     const action = mode === 'simple' ? 'get_unknown_cards' : mode === 'test' ? 'get_all_cards' : 'get_due_cards';
     const data = await callApi(action, { folder: state.studyScope });
     // _streak/_dueInShows - службові поля для чергової логіки "Простого" режиму
-    queue = (data.cards || []).map((c) => ({ ...c, _streak: 0, _dueInShows: 0 }));
-    testTotalCount = queue.length;
+    const cards = (data.cards || []).map((c) => ({ ...c, _streak: 0, _dueInShows: 0 }));
+    if (mode === 'simple') {
+      // Активна пачка - не більше SIMPLE_BATCH_SIZE карток одночасно; решта чекає в pool
+      queue = cards.slice(0, SIMPLE_BATCH_SIZE);
+      pool = cards.slice(SIMPLE_BATCH_SIZE);
+    } else {
+      queue = cards;
+      pool = [];
+    }
+    testTotalCount = queue.length + pool.length;
 
-    if (queue.length === 0) {
+    if (queue.length === 0 && pool.length === 0) {
       el('stateEmptyText').textContent = mode === 'simple'
         ? 'Усі картки в цьому наборі вже позначені як «Знаю» 🎉'
         : mode === 'test'
@@ -2282,7 +2301,7 @@ async function startSession(mode) {
 function updateProgress() {
   const label = el('progressLabel');
   const fill = el('progressFill');
-  const remainingTotal = reviewedCount + queue.length + (currentCard ? 1 : 0);
+  const remainingTotal = reviewedCount + queue.length + pool.length + (currentCard ? 1 : 0);
   if (remainingTotal === 0) {
     label.textContent = "";
     fill.style.width = "0%";
@@ -2318,9 +2337,15 @@ function nextCard() {
   if (currentMode === 'simple') {
     // "Тік" сесії - наближає момент, коли картки з кулдауном знову стануть доступні
     queue.forEach((c) => { if (c._dueInShows > 0) c._dueInShows -= 1; });
+    // Підтягуємо наступні картки з pool, щоб активна пачка знову була
+    // повною (SIMPLE_BATCH_SIZE) - саме тут "нові" картки заходять у гру,
+    // а не всі одразу на старті сесії
+    while (queue.length < SIMPLE_BATCH_SIZE && pool.length > 0) {
+      queue.push(pool.shift());
+    }
   }
 
-  if (queue.length === 0) {
+  if (queue.length === 0 && pool.length === 0) {
     currentCard = null;
     if (currentMode === 'test') {
       const pct = testTotalCount > 0 ? Math.round((testKnownCount / testTotalCount) * 100) : 0;
@@ -2561,6 +2586,7 @@ el('btnModeTest').addEventListener('click', () => startSession('test'));
 
 async function quitSession() {
   queue = [];
+  pool = [];
   currentCard = null;
   reviewedCount = 0;
   currentMode = null;
