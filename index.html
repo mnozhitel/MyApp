@@ -341,13 +341,6 @@
     color: var(--ink);
   }
 
-  .btn-outline.active {
-    color: var(--cyan);
-    border-color: rgba(55, 230, 255, 0.5);
-    background: rgba(55, 230, 255, 0.1);
-    box-shadow: var(--glow-cyan);
-  }
-
   .btn-danger {
     background: rgba(255, 95, 150, 0.12);
     border-color: rgba(255, 95, 150, 0.38);
@@ -870,34 +863,9 @@
   .rate-good  { color: var(--mint);  border-color: rgba(61, 245, 196, 0.45);  box-shadow: 0 0 20px -10px rgba(61, 245, 196, 0.9); }
   .rate-easy  { color: var(--cyan);  border-color: rgba(55, 230, 255, 0.45);  box-shadow: 0 0 20px -10px rgba(55, 230, 255, 0.9); }
 
-  .simple-rate-row .rate-btn, #rateRow .rate-btn { font-size: 15px; padding: 17px 4px; }
+  .simple-rate-row .rate-btn { font-size: 15px; padding: 17px 4px; }
 
   .rate-dontknow { color: var(--pink); border-color: rgba(255, 95, 150, 0.45); box-shadow: 0 0 20px -10px rgba(255, 95, 150, 0.9); }
-
-  .browse-nav-row { display: flex; gap: 8px; width: 100%; align-items: center; }
-  .browse-nav-btn { flex: 1; color: var(--cyan); border-color: rgba(55, 230, 255, 0.4); box-shadow: 0 0 20px -10px rgba(55, 230, 255, 0.9); }
-  .browse-pos { flex-shrink: 0; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding: 0 4px; }
-
-  .write-row { display: flex; gap: 8px; width: 100%; }
-  .write-row .input { flex: 1; min-width: 0; }
-  .write-row .btn { flex-shrink: 0; padding: 12px 16px; }
-
-  .write-prompt {
-    width: 100%;
-    padding: 30px 22px;
-    border-radius: var(--radius-card);
-    border: 1px solid var(--stroke);
-    background: linear-gradient(160deg, rgba(150, 185, 255, 0.09), rgba(150, 185, 255, 0.03));
-    box-shadow: var(--depth), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    text-align: center;
-  }
-  .write-prompt-word { font-family: 'Exo 2', system-ui, sans-serif; font-size: 21px; font-weight: 600; line-height: 1.45; margin: 12px 0; }
-  .write-prompt .examples { text-align: left; }
-
-  .write-result { width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-card); border: 1px solid var(--stroke); background: rgba(150, 185, 255, 0.05); }
-  .write-result.correct { border-color: rgba(61, 245, 196, 0.45); }
-  .write-result.incorrect { border-color: rgba(255, 95, 150, 0.45); }
-  .write-result-text { font-size: 13.5px; line-height: 1.5; }
   .rate-know     { color: var(--mint); border-color: rgba(61, 245, 196, 0.45); box-shadow: 0 0 20px -10px rgba(61, 245, 196, 0.9); }
 
   /* ---------------------------- вибір режиму ---------------------------- */
@@ -947,12 +915,6 @@
     box-shadow: var(--depth), 0 0 26px -14px rgba(255, 181, 71, 0.95);
   }
   .mode-btn-test .mode-btn-title { color: var(--amber); }
-
-  .mode-btn-browse {
-    border-color: rgba(55, 230, 255, 0.42);
-    box-shadow: var(--depth), 0 0 26px -14px rgba(55, 230, 255, 0.95);
-  }
-  .mode-btn-browse .mode-btn-title { color: var(--cyan); }
 
   /* ---------------------------- прогрес (дашборд) ---------------------------- */
 
@@ -1019,29 +981,6 @@
     font-weight: 700;
     cursor: pointer;
     padding: 4px 8px;
-  }
-
-  .select-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 6px 6px 6px 14px;
-    border-radius: 999px;
-    background: var(--glass-2);
-    border: 1px solid var(--stroke);
-    font-size: 12.5px;
-    color: var(--muted);
-  }
-  .select-bar .select-bar-actions { display: flex; gap: 2px; flex-shrink: 0; }
-  .select-bar .text-link-btn { padding: 6px 8px; font-size: 12.5px; }
-
-  .card-check {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    accent-color: var(--cyan);
-    margin-right: 2px;
   }
 
   /* ---------------------------- екрани станів ---------------------------- */
@@ -1252,21 +1191,12 @@
       <div class="row-inline">
         <input class="input" id="cardSearch" type="search" placeholder="Пошук слова чи визначення…" autocomplete="off">
         <button class="btn btn-outline" id="btnManageFolders" style="padding:12px 15px;">🗂</button>
-        <button class="btn btn-outline" id="btnToggleSelect" style="padding:12px 15px;">☑️</button>
       </div>
       <div class="chips" id="cardFolderChips"></div>
       <div class="category-filter hidden" id="cardCategoryFilter">
         <span id="cardCategoryFilterText"></span>
         <button id="btnClearCategoryFilter">✕</button>
       </div>
-      <div class="select-bar hidden" id="cardSelectBar">
-        <span id="cardSelectCount">Обрано: 0</span>
-        <div class="select-bar-actions">
-          <button class="text-link-btn" id="btnSelectAllCards">Обрати всі</button>
-          <button class="text-link-btn" id="btnCancelSelect">Скасувати</button>
-        </div>
-      </div>
-      <button class="btn btn-danger btn-block hidden" id="btnDeleteSelected">🗑 Видалити обрані</button>
       <div class="section-head">
         <div class="section-title">Мої картки</div>
         <div class="section-note" id="cardsCount"></div>
@@ -1365,38 +1295,20 @@
         <div class="state-title" id="modeSelectTitle">Обери режим вивчення</div>
         <div class="state-text" id="modeSelectSub">Можна перемкнути будь-коли.</div>
         <div class="mode-buttons">
-          <button class="mode-btn mode-btn-simple" id="btnChapterSimple">
+          <button class="mode-btn mode-btn-simple" id="btnModeSimple">
             <span class="mode-btn-title">🟢 Простий</span>
-            <span class="mode-btn-sub" id="modeSimpleChapterSub">Флеш-картки, Навчання, Тест</span>
+            <span class="mode-btn-sub" id="modeSimpleSub">Знаю / Не знаю</span>
           </button>
           <button class="mode-btn mode-btn-advanced" id="btnModeAdvanced">
             <span class="mode-btn-title">🧠 Просунутий</span>
             <span class="mode-btn-sub" id="modeAdvancedSub">Розумний алгоритм повторення (FSRS)</span>
-          </button>
-        </div>
-        <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
-      </div>
-
-      <div class="state-screen hidden" id="stateSimpleSelect">
-        <div class="state-icon">🟢</div>
-        <div class="state-title">Простий</div>
-        <div class="state-text" id="simpleSelectSub">Обери, як вчити цей набір.</div>
-        <button class="text-link-btn" id="btnOpenSettings">⚙️ Settings</button>
-        <div class="mode-buttons">
-          <button class="mode-btn mode-btn-browse" id="btnModeBrowse">
-            <span class="mode-btn-title">🗂 Флеш-картки</span>
-            <span class="mode-btn-sub" id="modeBrowseSub">Одна за одною по черзі, без алгоритму</span>
-          </button>
-          <button class="mode-btn mode-btn-simple" id="btnModeSimple">
-            <span class="mode-btn-title">📚 Навчання</span>
-            <span class="mode-btn-sub" id="modeSimpleSub">Знаю / Не знаю</span>
           </button>
           <button class="mode-btn mode-btn-test" id="btnModeTest">
             <span class="mode-btn-title">🧪 Тест</span>
             <span class="mode-btn-sub" id="modeTestSub">Перевір усі картки набору одразу</span>
           </button>
         </div>
-        <button class="text-link-btn" id="btnBackFromSimpleSelect">← Назад</button>
+        <button class="text-link-btn" id="btnBackFromMode">← Інший набір</button>
       </div>
 
       <div class="state-screen hidden" id="stateLoading">
@@ -1455,39 +1367,16 @@
           </div>
         </div>
 
-        <div class="write-prompt hidden" id="writePromptCard">
-          <div class="eyebrow" id="writePromptEyebrow">Слово</div>
-          <div class="write-prompt-word" id="writePromptWord"></div>
-          <div id="writePromptExamplesWrap" class="hidden">
-            <div class="section-label">Приклади</div>
-            <ul class="examples" id="writePromptExamples"></ul>
-          </div>
-        </div>
-
         <div class="rate-row hidden" id="rateRow">
-          <button class="rate-btn rate-dontknow" data-rating="again">❌ Не знаю<span class="n" id="nAgain"></span></button>
-          <button class="rate-btn rate-know" data-rating="good">✅ Знаю<span class="n" id="nGood"></span></button>
+          <button class="rate-btn rate-again" data-rating="again">Again<span class="n" id="nAgain"></span></button>
+          <button class="rate-btn rate-hard" data-rating="hard">Hard<span class="n" id="nHard"></span></button>
+          <button class="rate-btn rate-good" data-rating="good">Good<span class="n" id="nGood"></span></button>
+          <button class="rate-btn rate-easy" data-rating="easy">Easy<span class="n" id="nEasy"></span></button>
         </div>
 
         <div class="rate-row simple-rate-row hidden" id="simpleRateRow">
           <button class="rate-btn rate-dontknow" data-simple="dontknow">❌ Не знаю</button>
           <button class="rate-btn rate-know" data-simple="know">✅ Знаю</button>
-        </div>
-
-        <div class="write-row hidden" id="writeRow">
-          <input class="input" id="writeInput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Напиши відповідь…">
-          <button class="btn btn-primary" id="btnWriteSubmit">Перевірити</button>
-        </div>
-        <div class="write-result hidden" id="writeResult">
-          <div class="write-result-text" id="writeResultText"></div>
-          <button class="text-link-btn hidden" id="btnWriteOverride">Насправді я написав(ла) правильно</button>
-          <button class="btn btn-primary btn-block" id="btnWriteNext">Далі →</button>
-        </div>
-
-        <div class="browse-nav-row hidden" id="browseNavRow">
-          <button class="rate-btn browse-nav-btn" id="btnBrowsePrev">← Назад</button>
-          <span class="browse-pos" id="browsePos"></span>
-          <button class="rate-btn browse-nav-btn" id="btnBrowseNext">Далі →</button>
         </div>
 
         <button class="text-link-btn" id="btnQuitSession">← Завершити сесію</button>
@@ -1586,38 +1475,6 @@
     <div class="sheet-actions">
       <button class="btn btn-outline" id="btnConfirmNo">Скасувати</button>
       <button class="btn btn-danger" id="btnConfirmYes">Видалити</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===================== Модальне вікно: налаштування письма ===================== -->
-<div class="scrim hidden" id="scrimSettings">
-  <div class="sheet">
-    <div class="sheet-head">
-      <div class="sheet-title">⚙️ Settings</div>
-      <button class="sheet-close" data-close="scrimSettings">✕</button>
-    </div>
-    <div class="hint">Стосується підрежимів «Простого» — «Навчання» і «Тест».</div>
-    <div class="field">
-      <label class="field-label">Писати відповідь</label>
-      <div class="seg" id="segWriteMode">
-        <button data-val="off" type="button">Off</button>
-        <button data-val="on" type="button">On</button>
-      </div>
-    </div>
-    <div class="field hidden" id="showExamplesField">
-      <label class="field-label">Показувати приклади?</label>
-      <div class="seg" id="segShowExamples">
-        <button data-val="off" type="button">Off</button>
-        <button data-val="on" type="button">On</button>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">Передня сторона картки</label>
-      <div class="seg" id="segFrontSide">
-        <button data-val="term" type="button">Слово/Фраза</button>
-        <button data-val="definition" type="button">Визначення/Переклад</button>
-      </div>
     </div>
   </div>
 </div>
@@ -1767,8 +1624,6 @@ const state = {
   cardsCategory: null,
   cardsOffset: 0,
   cardsList: [],
-  selectMode: false,
-  selectedIds: new Set(),
 
   progressScope: 'all',
   progressScopeName: 'Усі картки',
@@ -1780,39 +1635,6 @@ const state = {
 
 const CARDS_PAGE_SIZE = 50;
 const CATEGORY_LABELS = { not_studied: 'Ще не вчив', still_learning: 'Ще вчу', mastered: 'Знаю напам’ять' };
-
-// ==================== Settings (підрежими "Простого": Навчання/Тест) ====================
-// Зберігаються локально на пристрої (localStorage самого Mini App'у,
-// не пов'язано з ботом чи базою) - три простих перемикачі замість форми:
-//  writeMode     - false: гортати картку і самому казати "знаю/не знаю";
-//                  true:  друкувати відповідь, система перевіряє сама.
-//  showExamples  - лише коли writeMode=true: чи показувати приклади разом
-//                  із загадкою (слово в них НЕ приховується).
-//  frontSide     - що показуємо СПЕРШУ ('term' - слово/фраза, 'definition' -
-//                  визначення/переклад); писати треба ту сторону, якої не показали.
-const SETTINGS_KEY = 'ea_write_settings_v1';
-const SETTINGS_DEFAULT = { writeMode: false, frontSide: 'term', showExamples: true };
-
-function loadSettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return Object.assign({}, SETTINGS_DEFAULT, JSON.parse(raw));
-  } catch (e) { /* приватний режим / недоступний localStorage - просто типові значення */ }
-  return Object.assign({}, SETTINGS_DEFAULT);
-}
-
-let settings = loadSettings();
-
-function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* тихо ігноруємо */ }
-}
-
-function renderSettingsUi() {
-  document.querySelectorAll('#segWriteMode button').forEach((b) => b.classList.toggle('active', b.dataset.val === (settings.writeMode ? 'on' : 'off')));
-  document.querySelectorAll('#segFrontSide button').forEach((b) => b.classList.toggle('active', b.dataset.val === settings.frontSide));
-  document.querySelectorAll('#segShowExamples button').forEach((b) => b.classList.toggle('active', b.dataset.val === (settings.showExamples ? 'on' : 'off')));
-  el('showExamplesField').classList.toggle('hidden', !settings.writeMode);
-}
 
 // =====================================================================
 // Положення фото в рамці картки
@@ -2065,33 +1887,6 @@ el('btnConfirmNo').addEventListener('click', () => {
   closeSheet('scrimConfirm');
   if (confirmResolve) confirmResolve(false);
   confirmResolve = null;
-});
-
-el('btnOpenSettings').addEventListener('click', () => {
-  renderSettingsUi();
-  openSheet('scrimSettings');
-});
-
-document.querySelectorAll('#segWriteMode button').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    settings.writeMode = btn.dataset.val === 'on';
-    saveSettings();
-    renderSettingsUi();
-  });
-});
-document.querySelectorAll('#segFrontSide button').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    settings.frontSide = btn.dataset.val;
-    saveSettings();
-    renderSettingsUi();
-  });
-});
-document.querySelectorAll('#segShowExamples button').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    settings.showExamples = btn.dataset.val === 'on';
-    saveSettings();
-    renderSettingsUi();
-  });
 });
 
 function plural(n, one, few, many) {
@@ -2366,7 +2161,6 @@ el('btnResetProgress').addEventListener('click', async () => {
 
 const sessionScreens = {
   modeSelect: el('stateModeSelect'),
-  simpleSelect: el('stateSimpleSelect'),
   loading: el('stateLoading'),
   error: el('stateError'),
   empty: el('stateEmpty'),
@@ -2379,25 +2173,15 @@ function showSessionScreen(name) {
   sessionScreens[name].classList.remove('hidden');
 }
 
-let currentMode = null; // 'browse' | 'simple' | 'advanced' | 'test'
+let currentMode = null; // 'simple' | 'advanced' | 'test'
 let queue = [];
-let pool = []; // "Навчання": картки, які ще НЕ введені в активну пачку
+let pool = []; // "Простий" режим: картки, які ще НЕ введені в активну пачку
 let currentCard = null;
 let flipped = false;
 let reviewedCount = 0;
 let animating = false;  // поки картка перелітає - кліки ігноруємо
 let testKnownCount = 0; // лише для режиму 'test' - підсумковий рахунок
 let testTotalCount = 0;
-let writePendingKnown = null; // режим "написати відповідь": оцінка чекає натискання "Далі"
-
-// "Перегляд" - окремий, найпростіший режим: без queue/pool/оцінок, просто
-// гортання по колу з підвантаженням наступних сторінок (щоб і набір із
-// ~1000 карток відкривався миттєво, а не одним важким запитом).
-let browseCards = [];
-let browseIndex = 0;
-let browseOffset = 0;
-let browseHasMore = true;
-let browseLoading = false;
 
 /**
  * "Простий" режим більше не показує картки по колу - у нього своя логіка
@@ -2492,35 +2276,20 @@ function openModeSelect() {
   const counts = scopeCounts();
   el('modeSelectTitle').textContent = state.studyScopeName;
   el('modeSelectSub').textContent = `${cardsWord(counts.total)} у наборі`;
+  el('modeSimpleSub').textContent = `Знаю / Не знаю · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · "вивчена" після ${SIMPLE_MIN_CORRECT} правильних відповідей`;
   el('modeAdvancedSub').textContent = `Розумний алгоритм (FSRS) · ${counts.due} до повторення`;
+  el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів`;
   showView('session');
   showSessionScreen('modeSelect');
 }
 
-function openSimpleSelect() {
-  const counts = scopeCounts();
-  el('simpleSelectSub').textContent = `${cardsWord(counts.total)} у наборі — обери, як вчити.`;
-  el('modeBrowseSub').textContent = `${cardsWord(counts.total)} · по черзі, до кінця набору`;
-  el('modeSimpleSub').textContent =
-    `${settings.writeMode ? 'Пиши відповідь' : 'Знаю / Не знаю'} · ${counts.unknown} ще не вивчено · до ${SIMPLE_BATCH_SIZE} карток одночасно · MASTERED дає лише Тест`;
-  el('modeTestSub').textContent = `${cardsWord(counts.total)} по черзі · без повторів${writeSuffix()}`;
-  showSessionScreen('simpleSelect');
-}
-
-function writeSuffix() {
-  return settings.writeMode ? ' · режим "написати відповідь"' : '';
-}
-
 async function startSession(mode) {
-  if (mode === 'browse') { await startBrowseSession(); return; }
-
   currentMode = mode;
   reviewedCount = 0;
   currentCard = null;
   animating = false;
   testKnownCount = 0;
   testTotalCount = 0;
-  writePendingKnown = null;
   showSessionScreen('loading');
   el('brandTitle').textContent = state.studyScopeName;
 
@@ -2544,7 +2313,7 @@ async function startSession(mode) {
 
     if (queue.length === 0 && pool.length === 0) {
       el('stateEmptyText').textContent = mode === 'simple'
-        ? 'Усі картки цього набору вже вивчені (в цій сесії) 🎉 Щоб стали MASTERED — пройди Тест.'
+        ? 'Усі картки в цьому наборі вже позначені як «Знаю» 🎉'
         : mode === 'test'
           ? 'У цьому наборі ще немає карток для тесту.'
           : 'Немає карток, які треба повторити прямо зараз. Повертайся пізніше.';
@@ -2572,109 +2341,6 @@ function updateProgress() {
   label.textContent = `${reviewedCount} / ${remainingTotal}`;
   fill.style.width = `${Math.round((reviewedCount / remainingTotal) * 100)}%`;
 }
-
-// ==================== Режим "Перегляд" (просте гортання) ====================
-// Без оцінок і без queue/pool - лише сторінки з list_cards, підвантажені по
-// мірі гортання, і хід по колу в обидва боки (щоб і набір на ~1000 карток
-// відкривався миттєво, а не одним важким запитом за все).
-
-async function startBrowseSession() {
-  currentMode = 'browse';
-  browseCards = [];
-  browseIndex = 0;
-  browseOffset = 0;
-  browseHasMore = true;
-  browseLoading = false;
-  reviewedCount = 0;
-  currentCard = null;
-  animating = false;
-  showSessionScreen('loading');
-  el('brandTitle').textContent = state.studyScopeName;
-
-  try {
-    await loadBrowsePage();
-    if (browseCards.length === 0) {
-      el('stateEmptyText').textContent = 'У цьому наборі ще немає карток.';
-      showSessionScreen('empty');
-      return;
-    }
-    showSessionScreen('study');
-    currentCard = browseCards[0];
-    resetFlipInstantly();
-    renderCard(currentCard);
-    renderBrowsePos();
-    playEnterAnimation();
-  } catch (e) {
-    el('stateErrorText').textContent = errorText(e);
-    showSessionScreen('error');
-  }
-}
-
-async function loadBrowsePage() {
-  if (!browseHasMore || browseLoading) return;
-  browseLoading = true;
-  try {
-    const data = await callApi('list_cards', {
-      folder: state.studyScope,
-      limit: CARDS_PAGE_SIZE,
-      offset: browseOffset,
-    });
-    const cards = data.cards || [];
-    browseCards = browseCards.concat(cards);
-    browseOffset += cards.length;
-    browseHasMore = !!data.has_more;
-  } finally {
-    browseLoading = false;
-  }
-}
-
-function renderBrowsePos() {
-  el('browsePos').textContent = `${browseIndex + 1} / ${browseCards.length}${browseHasMore ? '+' : ''}`;
-  el('btnBrowsePrev').disabled = browseIndex === 0;
-}
-
-/** "Флеш-картки" - без алгоритму, по черзі, до кінця набору (не по колу). */
-function finishBrowseSession() {
-  currentCard = null;
-  el('stateDoneText').textContent = `Переглянуто карток: ${browseCards.length}. Гарна робота!`;
-  showSessionScreen('done');
-}
-
-async function goToBrowseCard(index) {
-  if (animating || browseCards.length === 0) return;
-  currentCard = browseCards[index];
-  const hadPrevious = browseIndex !== index;
-  browseIndex = index;
-  renderBrowsePos();
-  if (hadPrevious) {
-    animateToCard(currentCard);
-  } else {
-    resetFlipInstantly();
-    renderCard(currentCard);
-  }
-  // Підтягуємо наступну сторінку заздалегідь, щоб гортання вперед не чекало
-  // на мережу навіть на великих наборах (~1000 карток).
-  if (browseHasMore && browseIndex >= browseCards.length - 5) loadBrowsePage();
-}
-
-el('btnBrowsePrev').addEventListener('click', () => {
-  if (currentMode !== 'browse' || browseCards.length === 0 || browseIndex === 0) return;
-  haptic();
-  goToBrowseCard(browseIndex - 1);
-});
-
-el('btnBrowseNext').addEventListener('click', async () => {
-  if (currentMode !== 'browse' || browseCards.length === 0 || animating) return;
-  haptic();
-  if (browseIndex >= browseCards.length - 1 && browseHasMore) {
-    await loadBrowsePage();
-  }
-  if (browseIndex >= browseCards.length - 1) {
-    finishBrowseSession();
-    return;
-  }
-  goToBrowseCard(browseIndex + 1);
-});
 
 /**
  * Миттєво повертає картку лицем догори БЕЗ анімації.
@@ -2785,94 +2451,7 @@ async function animateToCard(card) {
   animating = false;
 }
 
-// ==================== Режим "написати відповідь" (Навчання/Тест) ====================
-
-/** Прибирає пунктуацію/зайві пробіли/регістр - щоб не чіплятись до дрібниць. */
-function normalizeAnswer(s) {
-  return String(s || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[.,!?;:"'()]/g, '')
-    .replace(/\s+/g, ' ');
-}
-
-/** Відстань Левенштейна - для невеликої толерантності до одруків. */
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  const dp = [];
-  for (let i = 0; i <= m; i++) dp.push(new Array(n + 1).fill(0));
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return dp[m][n];
-}
-
-/** Короткий одрук пробачаємо (як письмовий режим у Quizlet), довшу відповідь - трохи більше. */
-function answersMatch(given, correct) {
-  const g = normalizeAnswer(given);
-  const c = normalizeAnswer(correct);
-  if (!g || !c) return g === c;
-  if (g === c) return true;
-  const tolerance = c.length >= 8 ? 2 : c.length >= 4 ? 1 : 0;
-  return levenshtein(g, c) <= tolerance;
-}
-
-/** true, коли треба написати САМЕ СЛОВО (а показується визначення). */
-function writeTargetIsWord() { return settings.frontSide === 'definition'; }
-function writeTargetText(card) { return writeTargetIsWord() ? card.word : card.definition; }
-
 function renderCard(card) {
-  const writeActive = settings.writeMode && (currentMode === 'simple' || currentMode === 'test');
-
-  if (writeActive) {
-    el('cardStage').classList.add('hidden');
-    el('rateRow').classList.add('hidden');
-    el('simpleRateRow').classList.add('hidden');
-    el('browseNavRow').classList.add('hidden');
-    el('playBtn').classList.add('hidden');
-    el('writeResult').classList.add('hidden');
-    el('writeRow').classList.remove('hidden');
-    el('writePromptCard').classList.remove('hidden');
-
-    // frontSide='term': бачимо слово/фразу, пишемо визначення/переклад.
-    // frontSide='definition': бачимо визначення/переклад, пишемо слово/фразу.
-    const showWord = settings.frontSide === 'term';
-    el('writePromptEyebrow').textContent = showWord
-      ? 'Слово/Фраза'
-      : (card.card_type === 'translation' ? 'Переклад' : 'Визначення');
-    el('writePromptWord').textContent = showWord ? card.word : card.definition;
-
-    const examples = Array.isArray(card.examples) ? card.examples : [];
-    const showExamples = examples.length > 0 && settings.showExamples;
-    el('writePromptExamplesWrap').classList.toggle('hidden', !showExamples);
-    if (showExamples) {
-      const ul = el('writePromptExamples');
-      ul.innerHTML = '';
-      examples.forEach((ex) => {
-        const li = document.createElement('li');
-        li.textContent = ex;
-        ul.appendChild(li);
-      });
-    }
-
-    el('writeInput').value = '';
-    el('writeInput').focus();
-    return;
-  }
-
-  el('writePromptCard').classList.add('hidden');
-  el('writeRow').classList.add('hidden');
-  el('writeResult').classList.add('hidden');
-  el('cardStage').classList.remove('hidden');
-
   el('wordFront').textContent = card.word;
   el('wordBack').textContent = card.word;
   el('definition').textContent = card.definition;
@@ -2896,23 +2475,16 @@ function renderCard(card) {
   // створена вручну в застосунку) - озвучуємо голосом самого пристрою
   el('playBtn').classList.remove('hidden');
 
-  if (currentMode === 'browse') {
+  if (currentMode === 'simple' || currentMode === 'test') {
     el('rateRow').classList.add('hidden');
-    el('simpleRateRow').classList.add('hidden');
-    el('browseNavRow').classList.remove('hidden');
-  } else if (currentMode === 'simple' || currentMode === 'test') {
-    el('rateRow').classList.add('hidden');
-    el('browseNavRow').classList.add('hidden');
     el('simpleRateRow').classList.remove('hidden');
   } else {
     el('simpleRateRow').classList.add('hidden');
-    el('browseNavRow').classList.add('hidden');
     el('rateRow').classList.remove('hidden');
-    // Просунутий режим лишає лише 2 кнопки (Не знаю/Знаю), але під капотом
-    // це, як і раніше, справжній FSRS: "Не знаю" -> рейтинг again,
-    // "Знаю" -> рейтинг good, і саме ці рейтинги йдуть у submit_review.
     el('nAgain').textContent = fmtPreview(fsrsPreview(card, 'again'));
+    el('nHard').textContent = fmtPreview(fsrsPreview(card, 'hard'));
     el('nGood').textContent = fmtPreview(fsrsPreview(card, 'good'));
+    el('nEasy').textContent = fmtPreview(fsrsPreview(card, 'easy'));
   }
 }
 
@@ -2994,58 +2566,6 @@ document.querySelectorAll('#rateRow .rate-btn').forEach((btn) => {
   });
 });
 
-/**
- * Спільна логіка "правильно/неправильно" - однакова і для кнопок
- * Знаю/Не знаю, і для письмового режиму (після автоматичної перевірки).
- *
- * ВАЖЛИВО: "Навчання" ("simple") більше НІКОЛИ не пише known у базу - це вже
- * не шлях до MASTERED. Єдиний шлях до MASTERED - пройти "Тест": get_unknown_cards
- * і так фільтрує known=false, тож Навчання завжди бачить лише не-мастерні
- * картки й спокійно лишає їх такими, доки Тест не підтвердить.
- */
-async function handleAnswer(known) {
-  if (currentMode === 'test') {
-    // Тест іде по колу лише ОДИН раз - не повертаємо "не знаю" назад
-    // у чергу, а рахуємо підсумковий результат. Кожна відповідь одразу
-    // йде на бекенд і є єдиним шляхом позначити картку MASTERED.
-    try {
-      await callApi("mark_known", { card_id: currentCard.id, known });
-    } catch (err) { /* тихо ігноруємо */ }
-    if (known) testKnownCount += 1;
-    reviewedCount += 1;
-  } else if (currentMode === 'simple') {
-    // Впевненість, що спадає з часом: скільки ця картка вже чекала своєї
-    // черги (з поправкою на те, що щойно введена картка ще не показувалась
-    // жодного разу - для неї підтвердженого інтервалу ще нема).
-    const interval = currentCard._neverShown ? 0 : (currentCard._ticksWaiting || 0);
-    currentCard._neverShown = false;
-
-    if (known) {
-      // Довший підтверджений інтервал перед правильною відповіддю - набагато
-      // сильніший доказ знання (spacing effect), ніж швидка вгадана відповідь
-      // одразу після помилки - тож stability росте пропорційно до interval.
-      currentCard._stability = (currentCard._stability || SIMPLE_INITIAL_STABILITY) * (1 + SIMPLE_SPACING_GROWTH * interval);
-      currentCard._correctCount = (currentCard._correctCount || 0) + 1;
-      currentCard._ticksWaiting = 0;
-
-      if (currentCard._correctCount >= SIMPLE_MIN_CORRECT) {
-        // "Вивчена в цій сесії" - SIMPLE_MIN_CORRECT правильних відповідей
-        // ЗАГАЛОМ, не обов'язково поспіль. Картка просто випадає з поточної
-        // черги - MASTERED вона стане лише після Тесту.
-        reviewedCount += 1;
-      } else {
-        queue.push(currentCard);
-      }
-    } else {
-      // Помилка не скидає _correctCount - лише різко знижує stability,
-      // тож картка одразу стає "найслабшою" і скоро покажеться знову.
-      currentCard._stability = Math.max(SIMPLE_MIN_STABILITY, (currentCard._stability || SIMPLE_INITIAL_STABILITY) * SIMPLE_WRONG_PENALTY);
-      currentCard._ticksWaiting = 0;
-      queue.push(currentCard);
-    }
-  }
-}
-
 document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -3053,63 +2573,59 @@ document.querySelectorAll('#simpleRateRow .rate-btn').forEach((btn) => {
     haptic();
     const known = btn.dataset.simple === 'know';
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = true));
-    await handleAnswer(known);
+
+    if (currentMode === 'test') {
+      // Тест іде по колу лише ОДИН раз - не повертаємо "не знаю" назад
+      // у чергу, а рахуємо підсумковий результат. Кожна відповідь одразу
+      // йде на бекенд.
+      try {
+        await callApi("mark_known", { card_id: currentCard.id, known });
+      } catch (err) { /* тихо ігноруємо */ }
+      if (known) testKnownCount += 1;
+      reviewedCount += 1;
+    } else if (currentMode === 'simple') {
+      // Впевненість, що спадає з часом: скільки ця картка вже чекала своєї
+      // черги (з поправкою на те, що щойно введена картка ще не показувалась
+      // жодного разу - для неї підтвердженого інтервалу ще нема).
+      const interval = currentCard._neverShown ? 0 : (currentCard._ticksWaiting || 0);
+      currentCard._neverShown = false;
+
+      if (known) {
+        // Довший підтверджений інтервал перед правильною відповіддю - набагато
+        // сильніший доказ знання (spacing effect), ніж швидка вгадана відповідь
+        // одразу після помилки - тож stability росте пропорційно до interval.
+        currentCard._stability = (currentCard._stability || SIMPLE_INITIAL_STABILITY) * (1 + SIMPLE_SPACING_GROWTH * interval);
+        currentCard._correctCount = (currentCard._correctCount || 0) + 1;
+        currentCard._ticksWaiting = 0;
+
+        if (currentCard._correctCount >= SIMPLE_MIN_CORRECT) {
+          // "Вивчена" - SIMPLE_MIN_CORRECT правильних відповідей ЗАГАЛОМ,
+          // не обов'язково поспіль (помилка між ними більше не скидає цей
+          // лічильник до нуля - вона лише б'є по stability, див. нижче).
+          try {
+            await callApi("mark_known", { card_id: currentCard.id, known: true });
+          } catch (err) { /* тихо ігноруємо */ }
+          reviewedCount += 1; // картка справді вивчена в цій сесії
+        } else {
+          queue.push(currentCard);
+        }
+      } else {
+        // Помилка не скидає _correctCount - лише різко знижує stability,
+        // тож картка одразу стає "найслабшою" і скоро покажеться знову.
+        currentCard._stability = Math.max(SIMPLE_MIN_STABILITY, (currentCard._stability || SIMPLE_INITIAL_STABILITY) * SIMPLE_WRONG_PENALTY);
+        currentCard._ticksWaiting = 0;
+        try {
+          await callApi("mark_known", { card_id: currentCard.id, known: false });
+        } catch (err) { /* тихо ігноруємо */ }
+        queue.push(currentCard);
+      }
+    }
+
     document.querySelectorAll('#simpleRateRow .rate-btn').forEach((b) => (b.disabled = false));
     nextCard();
   });
 });
 
-// ---------- письмовий режим: перевірка -> результат -> "Далі" ----------
-
-el('btnWriteSubmit').addEventListener('click', () => {
-  if (!currentCard || animating) return;
-  haptic();
-  const given = el('writeInput').value;
-  const target = writeTargetText(currentCard);
-  const known = answersMatch(given, target);
-
-  writePendingKnown = known;
-  el('writeRow').classList.add('hidden');
-  el('writeResult').classList.remove('hidden');
-  el('writeResult').classList.toggle('correct', known);
-  el('writeResult').classList.toggle('incorrect', !known);
-  el('writeResultText').textContent = known
-    ? '✅ Правильно!'
-    : `❌ Не зовсім. Правильна відповідь: «${target}»`;
-  el('btnWriteOverride').classList.toggle('hidden', known);
-});
-
-el('writeInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (!el('writeRow').classList.contains('hidden')) el('btnWriteSubmit').click();
-  }
-});
-
-// Автоматична перевірка іноді занадто сувора (синонім, інше форматування) -
-// даємо змогу самому зарахувати відповідь, як правильну, як і в Quizlet Write.
-el('btnWriteOverride').addEventListener('click', () => {
-  writePendingKnown = true;
-  el('writeResult').classList.remove('incorrect');
-  el('writeResult').classList.add('correct');
-  el('writeResultText').textContent = '✅ Зараховано як правильно.';
-  el('btnWriteOverride').classList.add('hidden');
-});
-
-el('btnWriteNext').addEventListener('click', async () => {
-  if (writePendingKnown === null || animating) return;
-  const known = writePendingKnown;
-  writePendingKnown = null;
-  el('btnWriteNext').disabled = true;
-  await handleAnswer(known);
-  el('btnWriteNext').disabled = false;
-  nextCard();
-});
-
-el('btnChapterSimple').addEventListener('click', openSimpleSelect);
-el('btnBackFromSimpleSelect').addEventListener('click', () => showSessionScreen('modeSelect'));
-
-el('btnModeBrowse').addEventListener('click', () => startSession('browse'));
 el('btnModeSimple').addEventListener('click', () => startSession('simple'));
 el('btnModeAdvanced').addEventListener('click', () => startSession('advanced'));
 el('btnModeTest').addEventListener('click', () => startSession('test'));
@@ -3123,11 +2639,6 @@ async function quitSession() {
   testKnownCount = 0;
   testTotalCount = 0;
   animating = false;
-  writePendingKnown = null;
-  browseCards = [];
-  browseIndex = 0;
-  browseOffset = 0;
-  browseHasMore = true;
   await loadOverview();
   switchTab('study');
 }
@@ -3135,18 +2646,8 @@ async function quitSession() {
 el('btnQuitSession').addEventListener('click', quitSession);
 el('btnBackFromMode').addEventListener('click', quitSession);
 el('btnBackFromError').addEventListener('click', quitSession);
-// Повертає туди, звідки прийшли: підрежими "Простого" (Флеш-картки/Навчання/
-// Тест) - назад у список підрежимів "Простого", а не одразу на вибір розділу.
-function backToModeSelect() {
-  if (currentMode === 'browse' || currentMode === 'simple' || currentMode === 'test') {
-    openSimpleSelect();
-  } else {
-    openModeSelect();
-  }
-}
-
-el('btnBackToModeSelectEmpty').addEventListener('click', backToModeSelect);
-el('btnBackToModeSelectDone').addEventListener('click', backToModeSelect);
+el('btnBackToModeSelectEmpty').addEventListener('click', openModeSelect);
+el('btnBackToModeSelectDone').addEventListener('click', openModeSelect);
 
 // ==================== ВКЛАДКА "КАРТКИ" ====================
 
@@ -3193,8 +2694,6 @@ async function loadCards(reset) {
   if (reset) {
     state.cardsOffset = 0;
     state.cardsList = [];
-    state.cardsHasMore = false;
-    exitSelectMode();
     el('cardList').innerHTML = '<div class="state-screen"><div class="spinner"></div></div>';
   }
   updateCategoryFilterUi();
@@ -3209,7 +2708,6 @@ async function loadCards(reset) {
     });
     state.cardsList = state.cardsList.concat(data.cards || []);
     state.cardsOffset += (data.cards || []).length;
-    state.cardsHasMore = !!data.has_more;
     el('btnLoadMore').classList.toggle('hidden', !data.has_more);
     renderCardList();
   } catch (e) {
@@ -3217,92 +2715,6 @@ async function loadCards(reset) {
     toast(errorText(e));
   }
 }
-
-// ---------- вибір кількох карток одразу (позначити - видалити разом) ----------
-
-function exitSelectMode() {
-  state.selectMode = false;
-  state.selectedIds = new Set();
-  el('cardSelectBar').classList.add('hidden');
-  el('btnDeleteSelected').classList.add('hidden');
-  el('btnToggleSelect').classList.remove('active');
-  renderCardList();
-}
-
-function updateSelectBar() {
-  el('cardSelectCount').textContent = `Обрано: ${state.selectedIds.size}`;
-  el('btnDeleteSelected').classList.toggle('hidden', state.selectedIds.size === 0);
-}
-
-el('btnToggleSelect').addEventListener('click', () => {
-  if (state.selectMode) {
-    exitSelectMode();
-    return;
-  }
-  state.selectMode = true;
-  state.selectedIds = new Set();
-  el('cardSelectBar').classList.remove('hidden');
-  el('btnToggleSelect').classList.add('active');
-  updateSelectBar();
-  renderCardList();
-});
-
-el('btnCancelSelect').addEventListener('click', exitSelectMode);
-
-// "Обрати всі" має сенс лише якщо справді позначає ВСІ картки поточного
-// фільтра, тож спершу довантажуємо сторінки, що ще не підʼїхали (працює й
-// на наборах у сотні-тисячу карток - просто кілька додаткових запитів).
-el('btnSelectAllCards').addEventListener('click', async () => {
-  const btn = el('btnSelectAllCards');
-  btn.disabled = true;
-  try {
-    while (state.cardsHasMore) {
-      const data = await callApi('list_cards', {
-        folder: state.cardsScope,
-        search: state.cardsSearch,
-        category: state.cardsCategory || undefined,
-        limit: CARDS_PAGE_SIZE,
-        offset: state.cardsOffset,
-      });
-      state.cardsList = state.cardsList.concat(data.cards || []);
-      state.cardsOffset += (data.cards || []).length;
-      state.cardsHasMore = !!data.has_more;
-    }
-    el('btnLoadMore').classList.add('hidden');
-    state.selectedIds = new Set(state.cardsList.map((c) => c.id));
-    updateSelectBar();
-    renderCardList();
-  } catch (e) {
-    toast(errorText(e));
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-el('btnDeleteSelected').addEventListener('click', async () => {
-  const ids = Array.from(state.selectedIds);
-  if (ids.length === 0) return;
-  const ok = await askConfirm(
-    'Видалити картки?',
-    `${cardsWord(ids.length)} буде видалено назавжди. Цю дію не можна скасувати.`,
-    'Видалити',
-  );
-  if (!ok) return;
-
-  try {
-    // Бекенд обмежує пачку 500 картками (як і move_cards) - тож ріжемо на шматки.
-    for (let i = 0; i < ids.length; i += 500) {
-      await callApi('delete_cards', { card_ids: ids.slice(i, i + 500) });
-    }
-    const removed = new Set(ids);
-    state.cardsList = state.cardsList.filter((c) => !removed.has(c.id));
-    exitSelectMode();
-    loadOverview();
-    toast('Картки видалено');
-  } catch (e) {
-    toast(errorText(e));
-  }
-});
 
 function renderCardList() {
   const list = el('cardList');
@@ -3325,55 +2737,29 @@ function renderCardList() {
     const folder = state.folders.find((f) => f.id === card.folder_id);
     const row = document.createElement('div');
     row.className = 'row';
-
-    if (state.selectMode) {
-      const check = document.createElement('input');
-      check.type = 'checkbox';
-      check.className = 'card-check';
-      check.checked = state.selectedIds.has(card.id);
-      check.addEventListener('click', (e) => e.stopPropagation());
-      check.addEventListener('change', () => {
-        if (check.checked) state.selectedIds.add(card.id);
-        else state.selectedIds.delete(card.id);
-        updateSelectBar();
-      });
-      row.appendChild(check);
-    }
-
-    const body = document.createElement('span');
-    body.innerHTML = `
+    row.innerHTML = `
       <span class="row-emoji">${TYPE_ICON[card.card_type] || '📖'}</span>
       <span class="row-body">
         <span class="row-title serif">${escapeHtml(card.word)}</span>
         <span class="row-sub">${escapeHtml(card.definition)}</span>
       </span>
       ${folder ? `<span class="pill quiet">${escapeHtml(folder.name)}</span>` : ''}`;
-    body.style.display = 'contents';
-    row.appendChild(body);
 
-    if (state.selectMode) {
-      row.addEventListener('click', () => {
-        const check = row.querySelector('.card-check');
-        check.checked = !check.checked;
-        check.dispatchEvent(new Event('change'));
-      });
-    } else {
-      // Швидке видалення прямо зі списку (як у Quizlet "Edit set") -
-      // окремою кнопкою, без відкриття повного редактора.
-      const del = document.createElement('button');
-      del.className = 'text-link-btn';
-      del.style.color = 'var(--pink)';
-      del.style.padding = '4px 4px 4px 8px';
-      del.title = 'Видалити';
-      del.textContent = '🗑';
-      del.addEventListener('click', (e) => {
-        e.stopPropagation();
-        quickDeleteCard(card);
-      });
-      row.appendChild(del);
-      row.addEventListener('click', () => openEditor(card));
-    }
+    // Швидке видалення прямо зі списку (як у Quizlet "Edit set") -
+    // окремою кнопкою, без відкриття повного редактора.
+    const del = document.createElement('button');
+    del.className = 'text-link-btn';
+    del.style.color = 'var(--pink)';
+    del.style.padding = '4px 4px 4px 8px';
+    del.title = 'Видалити';
+    del.textContent = '🗑';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickDeleteCard(card);
+    });
+    row.appendChild(del);
 
+    row.addEventListener('click', () => openEditor(card));
     list.appendChild(row);
   });
 }
@@ -4127,7 +3513,6 @@ function hideDraft() {
 const SOURCE_NOTES = {
   cambridge: 'Cambridge Dictionary',
   free_dictionary: 'Free Dictionary API',
-  ai: 'згенеровано AI',
 };
 
 el('btnFetch').addEventListener('click', async () => {
