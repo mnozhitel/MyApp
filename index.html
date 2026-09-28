@@ -1489,7 +1489,7 @@ const EDGE_FUNCTION_URL = "https://cfapayxqkldioxukfpvf.supabase.co/functions/v1
 
 // Мови для режиму "Переклад" - той самий список, що і в боті (/settings)
 const LANGUAGES = [
-  ["uk", "🇺🇦 Українська"], ["pl", "🇵🇱 Polski"], ["de", "🇩🇪 Deutsch"],
+  ["uk", "🇺🇦 Українська"], ["en", "🇬🇧 English"], ["pl", "🇵🇱 Polski"], ["de", "🇩🇪 Deutsch"],
   ["fr", "🇫🇷 Français"], ["es", "🇪🇸 Español"], ["it", "🇮🇹 Italiano"],
   ["pt", "🇵🇹 Português"], ["tr", "🇹🇷 Türkçe"], ["ru", "🇷🇺 Русский"],
   ["ja", "🇯🇵 日本語"], ["ko", "🇰🇷 한국어"], ["zh-Hans", "🇨🇳 中文"],
@@ -3387,7 +3387,7 @@ el('btnSenseAll').addEventListener('click', () => {
  * у DeepL. Одне слово майже завжди має кілька перекладів ("case" →
  * випадок, справа, чохол), і лише людина знає, який їй потрібен.
  */
-const altState = { alternatives: [], index: 0 };
+const altState = { alternatives: [], index: 0, target: '' };
 
 const POS_LABELS_UK = {
   NOUN: 'іменник', VERB: 'дієслово', ADJ: 'прикметник', ADV: 'прислівник',
@@ -3453,8 +3453,12 @@ function applyAlternative(index) {
   // за письмом самого варіанта: латиниця - це англійське слово, отже
   // змінювати треба поле слова, інакше - поле перекладу.
   const chosen = list[altState.index].text;
-  const chosenIsLatin = !/[^\u0000-\u007F]/.test(chosen);
-  if (chosenIsLatin) el('draftWord').value = chosen;
+  // Сервер прямо каже, який бік замінювати; евристика за письмом -
+  // лише запасний варіант для старих відповідей
+  const toWord = altState.target
+    ? altState.target === 'word'
+    : !/[^\u0000-\u007F]/.test(chosen);
+  if (toWord) el('draftWord').value = chosen;
   else el('draftDefinition').value = chosen;
   renderAltBar();
   haptic();
@@ -3477,6 +3481,7 @@ function showDraft(data, cardType, sourceNote) {
   el('draftSource').textContent = sourceNote || '';
 
   altState.alternatives = Array.isArray(data.alternatives) ? data.alternatives : [];
+  altState.target = data.alternatives_for || '';
   altState.index = 0;
   el('altList').classList.add('hidden');
   el('btnAltAll').textContent = '📋 Усі варіанти';
@@ -3533,6 +3538,7 @@ el('btnFetch').addEventListener('click', async () => {
           word: data.word, definition: data.translation, examples: [],
           // Варіанти перекладу зі словника - як «Alternatives» у DeepL
           alternatives: data.alternatives || [],
+          alternatives_for: data.alternatives_for || '',
           translation_warning: data.warning || '',
         },
         'translation',
