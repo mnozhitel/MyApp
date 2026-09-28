@@ -1820,7 +1820,7 @@ function errorText(e) {
     server_busy: "Сервер не встиг відповісти. Спробуй ще раз за кілька секунд.",
     bad_response: "Сервер відповів незрозуміло. Спробуй ще раз.",
     bad_url: "Це посилання не веде на зображення.",
-    not_an_image: "За цим посиланням не картинка.",
+    not_an_image: "Не вдалося дістати картинку з цього посилання.",
     too_large: "Файл завеликий — до 8 МБ.",
     upload_failed: "Не вдалося завантажити фото. Спробуй ще раз.",
   };
@@ -3185,7 +3185,7 @@ function buildPhotoPanel(key) {
 async function applyPhotoUrl(key, value, btn) {
   const p = photoPickers[key];
   const url = (value || '').trim();
-  if (!/^https?:\/\/\S+$/i.test(url)) { toast('Встав посилання, що починається з http.'); return; }
+  if (!/https?:\/\/\S+/i.test(url)) { toast('Встав посилання, що починається з http.'); return; }
   btn.disabled = true;
   const old = btn.textContent;
   btn.textContent = '…';
@@ -3194,7 +3194,7 @@ async function applyPhotoUrl(key, value, btn) {
     setOwnPhoto(key, res.image_url);
     toast('Фото додано ✅');
   } catch (e) {
-    toast('За цим посиланням картинки немає. Потрібне пряме посилання на зображення.');
+    toast('Не вдалося дістати картинку з цього посилання. Спробуй інше або завантаж файл.');
   }
   btn.disabled = false;
   btn.textContent = old;
